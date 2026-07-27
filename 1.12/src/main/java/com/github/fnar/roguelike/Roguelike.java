@@ -23,13 +23,13 @@ import greymerk.roguelike.EntityJoinWorld1_12;
 import greymerk.roguelike.ItemTooltip;
 import greymerk.roguelike.dungeon.Dungeon;
 
-@Mod(modid = "roguelike", name = "Roguelike Dungeons -- Fnar Edition", version = Roguelike.version, acceptableRemoteVersions = "*")
+@Mod(modid = "roguelike", name = "Roguelike Dungeons -- Arcana Edition", version = Roguelike.version, acceptableRemoteVersions = "*")
 public class Roguelike {
 
   public static final Logger LOGGER = LogManager.getLogger(Dungeon.MOD_ID);
 
-  public static final String version = "2.4.6";
-  public static final String date = "2024/9/02";
+  public static final String version = "2.5.0";
+  public static final String date = "2026/7/27";
   // The instance of your mod that Forge uses.
   @Instance("roguelike")
   public static Roguelike instance;

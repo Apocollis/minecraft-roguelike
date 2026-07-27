@@ -1,9 +1,9 @@
 apply plugin: 'idea'
 apply plugin: 'java'
 
-version = "2.4.6"
+version = "2.5.0"
 group = "com.github.fnar"
-archivesBaseName = "RoguelikeDungeonsFnarEdition"
+archivesBaseName = "RoguelikeDungeons-Arcana"
 
 sourceCompatibility = targetCompatibility = '1.8' // Need this here so eclipse task generates correctly.
 compileJava {

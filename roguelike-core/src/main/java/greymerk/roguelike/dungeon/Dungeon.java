@@ -42,7 +42,7 @@ import static java.lang.Math.sin;
 
 public class Dungeon {
 
-  public static final int NUM_LAYERS = 5;
+  public static final int NUM_LAYERS = 10;
   public static final int VERTICAL_SPACING = 10;
   public static final int TOPLEVEL = 50;
   public static final int CHUNK_SIZE = 16;
@@ -96,11 +96,19 @@ public class Dungeon {
   }
 
   public static boolean isDungeonChunk(WorldEditor editor, int chunkX, int chunkZ) {
-    return RogueConfig.DUNGEONS_SPAWN_ENABLED.getBoolean()
-        && SpawnCriteria.isValidDimension(editor.getDimension())
-//        && isVillageChunk(editor, chunkX, chunkZ)
-        && isSpawnFrequencyHit(chunkX, chunkZ)
-        && isSpawnChanceHit(chunkX, chunkZ);
+    if (!RogueConfig.DUNGEONS_SPAWN_ENABLED.getBoolean()) {
+      return false;
+    }
+    if (!SpawnCriteria.isValidDimension(editor.getDimension())) {
+      return false;
+    }
+    // When classic generation is enabled, use legacy random spawn rules
+    if (RogueConfig.ENABLE_CLASSIC_GENERATION.getBoolean()) {
+      return isSpawnFrequencyHit(chunkX, chunkZ)
+          && isSpawnChanceHit(chunkX, chunkZ);
+    }
+    // Default: Use grid spawning
+    return isGridSpawnHit(editor, chunkX, chunkZ);
   }
 
   private static boolean isSpawnFrequencyHit(int chunkX, int chunkZ) {
@@ -119,18 +127,88 @@ public class Dungeon {
     return rand.nextFloat() < spawnChance;
   }
 
-  public static int getLevel(int y) {
-    if (y >= 45) {
-      return 0;
-    } else if (y >= 35) {
-      return 1;
-    } else if (y >= 25) {
-      return 2;
-    } else if (y >= 15) {
-      return 3;
-    } else {
-      return 4;
+  private static boolean isGridSpawnHit(WorldEditor editor, int chunkX, int chunkZ) {
+    int minSpacing = RogueConfig.GRID_MIN_CHUNK_DISTANCE.getInt();
+    int maxSpacing = RogueConfig.GRID_MAX_CHUNK_DISTANCE.getInt();
+    if (minSpacing >= maxSpacing) {
+      maxSpacing = minSpacing + 1;
     }
+    if (maxSpacing <= 0) maxSpacing = 32;
+
+    int gridX = chunkX < 0 ? (chunkX - maxSpacing + 1) / maxSpacing : chunkX / maxSpacing;
+    int gridZ = chunkZ < 0 ? (chunkZ - maxSpacing + 1) / maxSpacing : chunkZ / maxSpacing;
+
+    long seed = editor.getSeed();
+    Random rand = new Random(
+        gridX * 341873128712L +
+        gridZ * 132897987541L +
+        seed +
+        RogueConfig.GRID_SEED_OFFSET.getInt()
+    );
+
+    int offsetMax = maxSpacing - minSpacing;
+    if (offsetMax <= 0) offsetMax = 1;
+
+    int offsetX = rand.nextInt(offsetMax);
+    int offsetZ = rand.nextInt(offsetMax);
+
+    int targetChunkX = gridX * maxSpacing + offsetX;
+    int targetChunkZ = gridZ * maxSpacing + offsetZ;
+
+    return chunkX == targetChunkX && chunkZ == targetChunkZ;
+  }
+
+  /**
+   * Find the nearest grid dungeon chunk position using spiral search.
+   * Used by /roguelike locate and /locate RoguelikeDungeon.
+   */
+  public static int[] findNearestGridDungeon(long seed, int currentChunkX, int currentChunkZ) {
+    int maxSpacing = RogueConfig.GRID_MAX_CHUNK_DISTANCE.getInt();
+    if (maxSpacing <= 0) maxSpacing = 32;
+    int minSpacing = RogueConfig.GRID_MIN_CHUNK_DISTANCE.getInt();
+    if (minSpacing >= maxSpacing) minSpacing = maxSpacing - 1;
+    if (minSpacing < 0) minSpacing = 0;
+    int offsetMax = maxSpacing - minSpacing;
+    if (offsetMax <= 0) offsetMax = 1;
+
+    int currentGridX = currentChunkX < 0 ? (currentChunkX - maxSpacing + 1) / maxSpacing : currentChunkX / maxSpacing;
+    int currentGridZ = currentChunkZ < 0 ? (currentChunkZ - maxSpacing + 1) / maxSpacing : currentChunkZ / maxSpacing;
+
+    for (int distance = 0; distance <= 100; distance++) {
+      for (int x = -distance; x <= distance; x++) {
+        boolean isEdgeX = Math.abs(x) == distance;
+        for (int z = -distance; z <= distance; z++) {
+          boolean isEdgeZ = Math.abs(z) == distance;
+          if (!isEdgeX && !isEdgeZ) continue;
+
+          int cellX = currentGridX + x;
+          int cellZ = currentGridZ + z;
+
+          Random rand = new Random(
+              cellX * 341873128712L +
+              cellZ * 132897987541L +
+              seed +
+              RogueConfig.GRID_SEED_OFFSET.getInt()
+          );
+
+          int offsetX = rand.nextInt(offsetMax);
+          int offsetZ = rand.nextInt(offsetMax);
+
+          int chunkX = cellX * maxSpacing + offsetX;
+          int chunkZ = cellZ * maxSpacing + offsetZ;
+
+          return new int[]{chunkX, chunkZ};
+        }
+      }
+    }
+    return null;
+  }
+
+  public static int getLevel(int y) {
+    // Dynamic level calculation based on TOPLEVEL and VERTICAL_SPACING
+    // Level 0 starts at TOPLEVEL (50), each subsequent level is 10 blocks lower
+    int level = (TOPLEVEL - y) / VERTICAL_SPACING;
+    return Math.max(0, Math.min(level, NUM_LAYERS - 1));
   }
 
   public void timedGenerate(DungeonSettings dungeonSettings, Coord coord) {
@@ -149,9 +227,21 @@ public class Dungeon {
           .map(DungeonLevel::new)
           .forEach(levels::add);
 
-      Arrays.stream(DungeonStage.values())
-          .flatMap(stage -> DungeonTaskRegistry.getInstance().getTasks(stage).stream())
-          .forEach(task -> performTaskSafely(dungeonSettings, task));
+      // Process each stage with thread yielding between stages
+      // to prevent integrated server thread starvation during large dungeon generation
+      for (DungeonStage stage : DungeonStage.values()) {
+        long stageStart = System.currentTimeMillis();
+        List<IDungeonTask> tasks = DungeonTaskRegistry.getInstance().getTasks(stage);
+        for (IDungeonTask task : tasks) {
+          performTaskSafely(dungeonSettings, task);
+        }
+        long stageTime = System.currentTimeMillis() - stageStart;
+        if (stageTime > 50) {
+          logger.info("Dungeon stage {} took {}ms", stage, stageTime);
+        }
+        // Yield thread between stages to prevent server freeze
+        Thread.yield();
+      }
 
       generationEvents.eventPost(dungeonSettings.getId(), coord);
       logger.info("Successfully generated dungeon with id {} at {}.", dungeonSettings.getId(), coord);
@@ -162,6 +252,7 @@ public class Dungeon {
       e.printStackTrace();
     }
   }
+
 
   private void performTaskSafely(DungeonSettings dungeonSettings, IDungeonTask task) {
     try {
@@ -178,6 +269,15 @@ public class Dungeon {
   }
 
   private Optional<Coord> selectLocation(Random rand, int x, int z) {
+    // For grid spawning, center the dungeon at the chunk center
+    if (!RogueConfig.ENABLE_CLASSIC_GENERATION.getBoolean()) {
+      Coord centered = new Coord(x + 8, 0, z + 8);
+      if (canGenerateDungeonHere(centered)) {
+        return Optional.of(centered);
+      }
+      return Optional.empty();
+    }
+    // Classic random location selection
     int attempts = RogueConfig.DUNGEONS_SPAWN_ATTEMPTS.getInt();
     return IntStream.range(0, attempts)
         .mapToObj(i -> getNearbyCoord(rand, x, z))

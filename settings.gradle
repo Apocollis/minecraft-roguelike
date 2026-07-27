@@ -2,7 +2,6 @@ plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '0.5.0'
 }
 
-rootProject.name = 'minecraft-roguelike'
+rootProject.name = 'RoguelikeDungeons-Arcana'
 include 'roguelike-core'
 include '1.12'
-include '1.14'

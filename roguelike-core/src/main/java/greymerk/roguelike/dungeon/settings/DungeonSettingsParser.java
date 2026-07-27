@@ -33,7 +33,7 @@ import greymerk.roguelike.worldgen.filter.Filter;
 
 public class DungeonSettingsParser {
 
-  public static final List<Integer> ALL_LEVELS = Collections.unmodifiableList(Lists.newArrayList(0, 1, 2, 3, 4));
+  public static final List<Integer> ALL_LEVELS = Collections.unmodifiableList(Lists.newArrayList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
 
   private final ModLoader modLoader;
 
@@ -70,6 +70,12 @@ public class DungeonSettingsParser {
     for (int level = 0; level < DungeonSettings.MAXIMUM_COUNT_OF_LEVELS; ++level) {
       LevelSettings setting = new LevelSettings(level);
       dungeonSettings.getLevelSettings().put(level, setting);
+    }
+    // Also ensure any levels beyond MAXIMUM_COUNT_OF_LEVELS up to 9 are pre-populated
+    for (int level = DungeonSettings.MAXIMUM_COUNT_OF_LEVELS; level < 10; ++level) {
+      if (!dungeonSettings.getLevelSettings().containsKey(level)) {
+        dungeonSettings.getLevelSettings().put(level, new LevelSettings(level));
+      }
     }
 
     parseId(root, dungeonSettings);

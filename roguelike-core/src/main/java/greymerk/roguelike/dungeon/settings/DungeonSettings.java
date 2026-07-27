@@ -23,7 +23,7 @@ import static java.util.Optional.ofNullable;
 
 public class DungeonSettings {
 
-  public static final int MAXIMUM_COUNT_OF_LEVELS = 5;
+  public static final int MAXIMUM_COUNT_OF_LEVELS = 10;
   private SettingIdentifier id;
   private final List<SettingIdentifier> inherit = new ArrayList<>();
   private boolean exclusive;
@@ -35,7 +35,7 @@ public class DungeonSettings {
   private final Set<SettingsType> overrides = new HashSet<>();
 
   public DungeonSettings() {
-    IntStream.range(0, 5)
+    IntStream.range(0, MAXIMUM_COUNT_OF_LEVELS)
         .mapToObj(LevelSettings::new)
         .forEach(level -> levels.put(level.getLevel(), level));
   }
@@ -146,7 +146,11 @@ public class DungeonSettings {
   }
 
   public int getNumLevels() {
-    return MAXIMUM_COUNT_OF_LEVELS;
+    if (levels.isEmpty()) {
+      return MAXIMUM_COUNT_OF_LEVELS;
+    }
+    int maxKey = levels.keySet().stream().mapToInt(Integer::intValue).max().orElse(0);
+    return Math.max(5, maxKey + 1);
   }
 
   public Set<SettingsType> getOverrides() {

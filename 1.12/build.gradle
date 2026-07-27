@@ -9,9 +9,9 @@ buildscript {
 }
 apply plugin: 'net.minecraftforge.gradle'
 
-version = "2.4.6"
+version = "2.5.0"
 group = "com.github.fnar"
-archivesBaseName = "RoguelikeDungeonsFnarEdition-${minecraft_version}"
+archivesBaseName = "RoguelikeDungeons-Arcana-${minecraft_version}"
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(8)
 
