@@ -292,8 +292,11 @@ public class RogueConfig {
 
   public Optional<Integer> getIntAtIndex(int index) {
     List<Integer> values = getIntList();
-    if (index >= values.size()) {
+    if (values == null || values.isEmpty()) {
       return Optional.empty();
+    }
+    if (index >= values.size()) {
+      return Optional.of(values.get(values.size() - 1));
     }
     return Optional.of(values.get(index));
   }
@@ -314,8 +317,11 @@ public class RogueConfig {
 
   public Optional<Double> getDoubleAtIndex(int index) {
     List<Double> values = getDoubleList();
-    if (index >= values.size()) {
+    if (values == null || values.isEmpty()) {
       return Optional.empty();
+    }
+    if (index >= values.size()) {
+      return Optional.of(values.get(values.size() - 1));
     }
     return Optional.of(values.get(index));
   }

@@ -27,7 +27,7 @@ public class SettingsRandom extends DungeonSettings {
 
     setTowerSettings(new TowerSettings(TowerType.random(random), Theme.random(random)));
 
-    IntStream.range(0, 5)
+    IntStream.range(0, 10)
         .forEach(i -> getLevelSettings().put(i, createRandomLevel(random, i)));
 
     GreymerkLootProvider loot = new GreymerkLootProvider();
@@ -36,7 +36,7 @@ public class SettingsRandom extends DungeonSettings {
     getLootRules().add(new TypedForEachLootRule(ChestType.STARTER, loot.get(GreymerkChestType.TOOL, 0), 0, 2));
     getLootRules().add(new TypedForEachLootRule(ChestType.STARTER, loot.get(GreymerkChestType.SUPPLY, 0), 0, 2));
     getLootRules().add(new TypedForEachLootRule(ChestType.STARTER, new SpecialtyLootItem(0, 0, Equipment.LEGS, Quality.WOOD), 0, 2));
-    for (int level = 0; level < 5; ++level) {
+    for (int level = 0; level < 10; ++level) {
       getLootRules().add(new TypedForEachLootRule(ChestType.ARMOUR, loot.get(GreymerkChestType.POTION, level), level, 1));
       getLootRules().add(new TypedForEachLootRule(ChestType.ARMOUR, loot.get(GreymerkChestType.ARMOUR, level), level, 1));
       getLootRules().add(new TypedForEachLootRule(ChestType.ARMOUR, loot.get(GreymerkChestType.FOOD, level), level, 1));

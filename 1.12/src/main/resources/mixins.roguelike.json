@@ -1,0 +1,10 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "greymerk.roguelike.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "client": [],
+  "mixins": [
+    "MixinCommandLocate"
+  ]
+}

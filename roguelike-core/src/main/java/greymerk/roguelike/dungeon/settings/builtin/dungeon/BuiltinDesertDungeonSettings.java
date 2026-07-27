@@ -39,7 +39,7 @@ public class BuiltinDesertDungeonSettings extends DungeonSettings {
     for (int level = 0; level < MAXIMUM_COUNT_OF_LEVELS; level++) {
 
       LevelSettings levelSettings = new LevelSettings(level);
-      levelSettings.setTheme(themes[level]);
+      levelSettings.setTheme(themes[Math.min(level, themes.length - 1)]);
 
       if (level == 0) {
         levelSettings.setLevel(2);

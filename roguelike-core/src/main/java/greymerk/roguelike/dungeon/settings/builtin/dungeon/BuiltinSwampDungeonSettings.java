@@ -55,7 +55,7 @@ public class BuiltinSwampDungeonSettings extends DungeonSettings {
     for (int level = 0; level < DungeonSettings.MAXIMUM_COUNT_OF_LEVELS; level++) {
 
       LevelSettings levelSettings = getLevelSettings(level);
-      levelSettings.setTheme(themes[level]);
+      levelSettings.setTheme(themes[Math.min(level, themes.length - 1)]);
 
       if (level == 0) {
 

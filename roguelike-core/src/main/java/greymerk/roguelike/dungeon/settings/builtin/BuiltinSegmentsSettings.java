@@ -14,7 +14,7 @@ public class BuiltinSegmentsSettings extends DungeonSettings {
   public BuiltinSegmentsSettings() {
     super(ID);
 
-    for (int level = 0; level < 5; ++level) {
+    for (int level = 0; level < 10; ++level) {
 
       SegmentGenerator segments;
 

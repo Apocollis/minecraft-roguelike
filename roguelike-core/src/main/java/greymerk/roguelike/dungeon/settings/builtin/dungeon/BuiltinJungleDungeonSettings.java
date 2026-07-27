@@ -46,6 +46,7 @@ public class BuiltinJungleDungeonSettings extends DungeonSettings {
     SegmentGenerator segments;
     for (int level = 0; level < MAXIMUM_COUNT_OF_LEVELS; level++) {
       LevelSettings levelSettings = new LevelSettings(level);
+      levelSettings.setTheme(themes[Math.min(level, themes.length - 1)]);
       if (level < 4) {
         levelSettings.setLevel(3);
         segments = new SegmentGenerator(Segment.MOSSYARCH);
@@ -62,7 +63,7 @@ public class BuiltinJungleDungeonSettings extends DungeonSettings {
         levelSettings.addFilter(Filter.VINE);
       }
 
-      levelSettings.setTheme(themes[level]);
+      levelSettings.setTheme(themes[Math.min(level, themes.length - 1)]);
       getLevelSettings().put(level, levelSettings);
     }
   }

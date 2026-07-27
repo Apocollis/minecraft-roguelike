@@ -258,7 +258,7 @@ public class Dungeon {
     try {
       task.execute(editor, this, dungeonSettings);
     } catch (Exception exception) {
-      new ReportThisIssueException(exception).printStackTrace();
+      logger.error("Dungeon task failed for task " + task.getClass().getName(), exception);
     }
   }
 

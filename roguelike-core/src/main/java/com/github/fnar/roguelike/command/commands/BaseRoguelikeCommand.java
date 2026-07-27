@@ -29,7 +29,7 @@ public class BaseRoguelikeCommand implements RoguelikeCommand {
   @Override
   public void onException(Exception exception) {
     context.sendFailure(exception);
-    logger.info(exception);
+    logger.error("Command execution failed:", exception);
   }
 
   @Override

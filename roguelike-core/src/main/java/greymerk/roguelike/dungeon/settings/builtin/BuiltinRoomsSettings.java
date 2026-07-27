@@ -45,7 +45,9 @@ public class BuiltinRoomsSettings extends DungeonSettings {
     addRoomsToLevel(1, getLevel1Rooms());
     addRoomsToLevel(2, getLevel2Rooms());
     addRoomsToLevel(3, getLevel3Rooms());
-    addRoomsToLevel(4, getLevel4Rooms());
+    for (int level = 4; level < MAXIMUM_COUNT_OF_LEVELS; level++) {
+      addRoomsToLevel(level, getLevel4Rooms());
+    }
   }
 
   private void addRoomsToLevel(int level, List<RoomSetting> rooms) {

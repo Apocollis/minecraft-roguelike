@@ -13,7 +13,7 @@ public class BuiltinSecretsSettings extends DungeonSettings {
   public BuiltinSecretsSettings() {
     super(ID);
 
-    for (int level = 0; level < 5; ++level) {
+    for (int level = 0; level < 10; ++level) {
 
       SecretsSetting factory = new SecretsSetting();
 

@@ -34,7 +34,7 @@ public class BuiltinLootSettings extends DungeonSettings {
 
     addRewardLoot();
 
-    for (int level = 0; level < 5; level++) {
+    for (int level = 0; level < 10; level++) {
       getLootRules().add(new TypedForEachLootRule(ChestType.ARMOUR, loot.get(GreymerkChestType.POTION, level), level, 1));
       getLootRules().add(new TypedForEachLootRule(ChestType.ARMOUR, loot.get(GreymerkChestType.ARMOUR, level), level, 1));
       getLootRules().add(new TypedForEachLootRule(ChestType.ARMOUR, loot.get(GreymerkChestType.FOOD, level), level, 1));
@@ -86,7 +86,7 @@ public class BuiltinLootSettings extends DungeonSettings {
   }
 
   private void addGardenLoot(GreymerkLootProvider loot) {
-    for (int level = 0; level < 5; level++) {
+    for (int level = 0; level < 10; level++) {
       for (int i = 0; i < 5; i++) {
         getLootRules().add(new TypedForEachLootRule(ChestType.GARDEN, loot.get(GreymerkChestType.GARDEN, 1), level, 2));
         getLootRules().add(new TypedForEachLootRule(ChestType.GARDEN, loot.get(GreymerkChestType.GARDEN, 1), level, 2));
@@ -99,7 +99,9 @@ public class BuiltinLootSettings extends DungeonSettings {
     useLootTableForLevel(1, "chests/desert_pyramid");
     useLootTableForLevel(2, "chests/jungle_temple");
     useLootTableForLevel(3, "chests/nether_bridge");
-    useLootTableForLevel(4, "chests/end_city_treasure");
+    for (int level = 4; level < 10; level++) {
+      useLootTableForLevel(level, "chests/end_city_treasure");
+    }
   }
 
   private void useLootTableForLevel(int level, String resourcePath) {
@@ -107,7 +109,7 @@ public class BuiltinLootSettings extends DungeonSettings {
   }
 
   private void addStarterLoot(GreymerkLootProvider loot) {
-    for (int level = 0; level < 5; level++) {
+    for (int level = 0; level < 10; level++) {
       getLootRules().add(new TypedForEachLootRule(ChestType.STARTER, new WeightedChoice<>(new BookStarter().asStack(), 1), level, 1));
       getLootRules().add(new TypedForEachLootRule(ChestType.STARTER, loot.get(GreymerkChestType.WEAPON, level), level, 2));
       getLootRules().add(new TypedForEachLootRule(ChestType.STARTER, loot.get(GreymerkChestType.FOOD, level), level, 2));

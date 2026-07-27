@@ -21,7 +21,7 @@ public class BuiltinThemeSettings extends DungeonSettings {
     setTowerSettings(new TowerSettings(TowerType.ROGUE, Theme.TOWER));
     for (int level = 0; level < MAXIMUM_COUNT_OF_LEVELS; level++) {
       LevelSettings levelSettings = new LevelSettings(level);
-      Theme theme = level == 4 ? randomTheme() : themes[level];
+      Theme theme = level >= 4 ? randomTheme() : themes[level];
       levelSettings.setTheme(theme);
       getLevelSettings().put(level, levelSettings);
     }

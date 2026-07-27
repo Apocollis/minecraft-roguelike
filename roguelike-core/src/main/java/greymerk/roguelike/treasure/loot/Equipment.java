@@ -38,7 +38,12 @@ public enum Equipment {
   }
 
   public static Quality rollQuality(Random rand, int level) {
-    return equipmentQuality.get(level).get(rand);
+    int clampedLevel = Math.max(0, Math.min(level, 9));
+    IWeighted<Quality> qualityOdds = equipmentQuality.get(clampedLevel);
+    if (qualityOdds == null) {
+      qualityOdds = equipmentQuality.get(4);
+    }
+    return qualityOdds != null ? qualityOdds.get(rand) : Quality.WOOD;
   }
 
   public static WeaponType asWeaponType(Equipment type) {
@@ -81,7 +86,7 @@ public enum Equipment {
   }
 
   public static void loadQualityOddsTable() {
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < 10; ++i) {
       WeightedRandomizer<Quality> qualities = new WeightedRandomizer<>();
       switch (i) {
         case 0:
@@ -113,6 +118,7 @@ public enum Equipment {
           qualities.add(new WeightedChoice<>(Quality.DIAMOND, 5));
           break;
         case 4:
+        default:
           qualities.add(new WeightedChoice<>(Quality.WOOD, 5));
           qualities.add(new WeightedChoice<>(Quality.STONE, 20));
           qualities.add(new WeightedChoice<>(Quality.IRON, 50));
