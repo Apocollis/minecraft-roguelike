@@ -299,32 +299,42 @@ public class Dungeon {
   }
 
   public boolean canGenerateDungeonHere(Coord coord) {
-    if (new TimedCallable<>("Dungeon.isTooCloseToStructures()", () -> isTooCloseToStructures(coord)).call()) {
+    Coord cursor = coord.copy().setY(RogueConfig.UPPERLIMIT.getInt());
+
+    if (!editor.isAirBlock(cursor)
+        || !canFindStartingCoord(cursor)
+        || !isFreeOverhead(cursor)
+        || !isSolidBelow(cursor)) {
       return false;
     }
 
-    Coord cursor = coord.copy().setY(RogueConfig.UPPERLIMIT.getInt());
-
-    return editor.isAirBlock(cursor)
-        && canFindStartingCoord(cursor)
-        && isFreeOverhead(cursor)
-        && isSolidBelow(cursor);
+    return !isTooCloseToStructures(coord);
   }
 
   private boolean isTooCloseToStructures(Coord coord) {
-    Predicate<VanillaStructure> structuresToAvoid = structure -> hasStructureTooCloseBy(coord, structure);
     Set<VanillaStructure> structuresToCheckDistanceTo = RogueConfig.vanillaStructuresToCheckDistanceTo();
-    return !structuresToCheckDistanceTo.isEmpty() && structuresToCheckDistanceTo.stream().anyMatch(structuresToAvoid);
+    if (structuresToCheckDistanceTo.isEmpty()) {
+      return false;
+    }
+    Predicate<VanillaStructure> structuresToAvoid = structure -> hasStructureTooCloseBy(coord, structure);
+    return structuresToCheckDistanceTo.stream().anyMatch(structuresToAvoid);
   }
 
   private boolean hasStructureTooCloseBy(Coord coord, VanillaStructure structure) {
     int minimumDistanceRequired = RogueConfig.SPAWN_MINIMUM_DISTANCE_FROM_VANILLA_STRUCTURES.getInt();
-    Coord structureCoord = editor.findNearestStructure(structure, coord, minimumDistanceRequired);
-    if (structureCoord == null) {
-      logger.info("Did not detect structure \"{}\" within {} blocks of potential spawn location {}.", structure.name(), minimumDistanceRequired, coord);
+    if (minimumDistanceRequired <= 0) {
       return false;
     }
-    return coord.distance(structureCoord) < minimumDistanceRequired;
+    try {
+      Coord structureCoord = editor.findNearestStructure(structure, coord, minimumDistanceRequired);
+      if (structureCoord == null) {
+        return false;
+      }
+      return coord.distance(structureCoord) < minimumDistanceRequired;
+    } catch (Exception e) {
+      logger.warn("Failed structure distance check for {}: {}", structure.name(), e.getMessage());
+      return false;
+    }
   }
 
   private boolean canFindStartingCoord(Coord cursor) {
