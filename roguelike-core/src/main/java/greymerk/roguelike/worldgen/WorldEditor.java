@@ -81,4 +81,6 @@ public interface WorldEditor {
   List<String> getBiomeTagNames(Coord coord);
 
   ModLoader getModLoader();
+
+  void generateWaystone(Coord pos);
 }

@@ -10,7 +10,7 @@ buildscript {
 apply plugin: 'net.minecraftforge.gradle'
 
 version = "2.5.0"
-group = "com.github.fnar"
+group = "com.github.apocollis"
 archivesBaseName = "RoguelikeDungeons-Arcana-${minecraft_version}"
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(8)
@@ -124,7 +124,8 @@ jar {
                 "Implementation-Vendor"      : "Apocollis",
                 "Implementation-Timestamp"   : new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
                 "FMLCorePluginContainsFMLMod": "true",
-                "ForceLoadAsMod"             : "true"
+                "ForceLoadAsMod"             : "true",
+                "MixinConfigs"               : "mixins.roguelike.json"
         ])
     }
 

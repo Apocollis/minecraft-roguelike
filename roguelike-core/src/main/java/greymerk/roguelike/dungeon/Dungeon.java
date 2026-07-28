@@ -212,7 +212,9 @@ public class Dungeon {
   }
 
   public void timedGenerate(DungeonSettings dungeonSettings, Coord coord) {
-    generationEvents.eventPre(dungeonSettings.getId(), coord);
+    if (generationEvents != null) {
+      generationEvents.eventPre(dungeonSettings.getId(), coord);
+    }
     new TimedTask("Dungeon.generate()", () -> generate(dungeonSettings, coord)).run();
   }
 
@@ -227,23 +229,23 @@ public class Dungeon {
           .map(DungeonLevel::new)
           .forEach(levels::add);
 
-      // Process each stage with thread yielding between stages
-      // to prevent integrated server thread starvation during large dungeon generation
-      for (DungeonStage stage : DungeonStage.values()) {
+      // Process each stage with thread yielding and progress logging
+      DungeonStage[] stages = DungeonStage.values();
+      for (int i = 0; i < stages.length; i++) {
+        DungeonStage stage = stages[i];
         long stageStart = System.currentTimeMillis();
         List<IDungeonTask> tasks = DungeonTaskRegistry.getInstance().getTasks(stage);
         for (IDungeonTask task : tasks) {
           performTaskSafely(dungeonSettings, task);
         }
         long stageTime = System.currentTimeMillis() - stageStart;
-        if (stageTime > 50) {
-          logger.info("Dungeon stage {} took {}ms", stage, stageTime);
-        }
-        // Yield thread between stages to prevent server freeze
+        logger.info("Completed dungeon stage [{}/{}] {} in {}ms", i + 1, stages.length, stage, stageTime);
         Thread.yield();
       }
 
-      generationEvents.eventPost(dungeonSettings.getId(), coord);
+      if (generationEvents != null) {
+        generationEvents.eventPost(dungeonSettings.getId(), coord);
+      }
       logger.info("Successfully generated dungeon with id {} at {}.", dungeonSettings.getId(), coord);
       for (DungeonLevel level : levels) {
         postLevelBoundingBoxEventAsync(level, generationPartsEvents, dungeonSettings.getId());
@@ -251,6 +253,18 @@ public class Dungeon {
     } catch (Exception e) {
       e.printStackTrace();
     }
+  }
+
+  private int findGroundY(Coord coord) {
+    Coord cursor = coord.copy().setY(RogueConfig.UPPERLIMIT.getInt());
+    while (cursor.getY() > RogueConfig.LOWERLIMIT.getInt() && !editor.isValidGroundBlock(cursor)) {
+      cursor.down();
+    }
+    int y = cursor.getY();
+    if (y <= RogueConfig.LOWERLIMIT.getInt() || y > 240) {
+      return 68;
+    }
+    return y;
   }
 
 
@@ -263,6 +277,7 @@ public class Dungeon {
   }
 
   private static void postLevelBoundingBoxEventAsync(DungeonLevel dungeonLevel, GenerationPartsEvent eventBus, SettingIdentifier id) {
+    if (eventBus == null) return;
     new Thread(() -> {
       eventBus.eventParts(id, dungeonLevel.layout.getLevelBoundingBox());
     }).start();

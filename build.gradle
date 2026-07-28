@@ -2,7 +2,7 @@ apply plugin: 'idea'
 apply plugin: 'java'
 
 version = "2.5.0"
-group = "com.github.fnar"
+group = "com.github.apocollis"
 archivesBaseName = "RoguelikeDungeons-Arcana"
 
 sourceCompatibility = targetCompatibility = '1.8' // Need this here so eclipse task generates correctly.

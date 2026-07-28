@@ -9,7 +9,7 @@ apply plugin: 'java'
 apply plugin: 'java-library'
 
 version = "2.4.6"
-group = "com.github.fnar"
+group = "com.github.apocollis"
 archivesBaseName = "RoguelikeCore"
 
 sourceCompatibility = targetCompatibility = '1.8'

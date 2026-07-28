@@ -464,6 +464,56 @@ public class WorldEditor1_12 implements WorldEditor {
   }
 
   @Override
+  public void generateWaystone(Coord pos) {
+    if (!net.minecraftforge.fml.common.Loader.isModLoaded("waystones")) {
+      return;
+    }
+    try {
+      net.minecraft.block.Block waystoneBlock = net.minecraft.block.Block.getBlockFromName("waystones:waystone");
+      if (waystoneBlock == null) {
+        return;
+      }
+
+      BlockPos basePos = BlockPosMapper1_12.map(pos);
+      BlockPos topPos = basePos.up();
+
+      IBlockState baseState = waystoneBlock.getStateFromMeta(0);
+      IBlockState topState = waystoneBlock.getStateFromMeta(8);
+
+      world.setBlockState(basePos, baseState, 2);
+      world.setBlockState(topPos, topState, 2);
+
+      TileEntity tile = world.getTileEntity(basePos);
+      if (tile != null) {
+        Biome biome = world.getBiome(basePos);
+        String name = null;
+        try {
+          Class<?> nameGenClass = Class.forName("net.blay09.mods.waystones.worldgen.NameGenerator");
+          java.lang.reflect.Method getMethod = nameGenClass.getMethod("get", World.class);
+          Object nameGen = getMethod.invoke(null, world);
+          java.lang.reflect.Method getNameMethod = nameGenClass.getMethod("getName", BlockPos.class, int.class, Biome.class, Random.class);
+          name = (String) getNameMethod.invoke(nameGen, basePos, world.provider.getDimension(), biome, random);
+        } catch (Throwable e) {
+          logger.info("Could not invoke Waystones NameGenerator via reflection: {}", e.getMessage());
+        }
+
+        if (name == null || name.isEmpty()) {
+          name = "Eniko Spire";
+        }
+
+        NBTTagCompound nbt = tile.writeToNBT(new NBTTagCompound());
+        nbt.setString("WaystoneName", name);
+        nbt.setBoolean("WasGenerated", true);
+        nbt.setBoolean("IsGlobal", false);
+        tile.readFromNBT(nbt);
+        tile.markDirty();
+      }
+    } catch (Throwable t) {
+      logger.warn("Failed to generate Waystone at {}: {}", pos, t.getMessage());
+    }
+  }
+
+  @Override
   public String toString() {
     return stats.entrySet().stream()
         .map(pair -> pair.getKey().toString() + ": " + pair.getValue() + "\n")

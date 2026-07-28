@@ -1,5 +1,5 @@
-Roguelike Dungeons: _Fnar Edition_
-===================
+Roguelike Dungeons - Arcana Edition
+====================================
 
 [![CurseForge Downloads](https://cf.way2muchnoise.eu/fnars-roguelike-dungeons.svg)](https://www.curseforge.com/minecraft/mc-mods/fnars-roguelike-dungeons)
 [![CurseForge Versions](https://cf.way2muchnoise.eu/versions/fnars-roguelike-dungeons.svg)](https://www.curseforge.com/minecraft/mc-mods/fnars-roguelike-dungeons)  
