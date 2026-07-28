@@ -498,11 +498,17 @@ public class WorldEditor1_12 implements WorldEditor {
         }
 
         if (name == null || name.isEmpty()) {
-          name = "Eniko Spire";
+          name = "Eniko";
         }
 
+        String[] suffixes = new String[] {
+            "Tower", "Keep", "Vault", "Reach", "Spire", "Citadel", "Hold", "Apex", "Overlook", "Bastion"
+        };
+        String suffix = suffixes[random.nextInt(suffixes.length)];
+        String fullName = name + " " + suffix;
+
         NBTTagCompound nbt = tile.writeToNBT(new NBTTagCompound());
-        nbt.setString("WaystoneName", name);
+        nbt.setString("WaystoneName", fullName);
         nbt.setBoolean("WasGenerated", true);
         nbt.setBoolean("IsGlobal", false);
         tile.readFromNBT(nbt);

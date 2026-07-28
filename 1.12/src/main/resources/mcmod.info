@@ -1,7 +1,7 @@
 [
 {
   "modid" : "roguelike",
-  "name" : "Roguelike Dungeons -- Fnar Edition",
+  "name" : "Roguelike Dungeons -- Arcana Edition",
   "description" : "Provides a world generator that creates randomized dungeons periodically.",
   "version" : "${version}",
   "mcversion": "${mcversion}",
@@ -9,7 +9,7 @@
   "credits": "",
   "logoFile": "",
   "updateUrl": "",
-  "authorList" : ["Greymerk", "Fnar"],
+  "authorList" : ["Greymerk", "Fnar", "Apocollis"],
   "parent": "",
   "screenshots": [],
   "dependencies": []
