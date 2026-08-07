@@ -365,7 +365,7 @@ public class EniTower extends Tower {
     Coord topStep = new Coord(floor).up(23);
     SpiralStaircase.newStaircase(editor).withHeight(topStep.getY() - dungeon.getY()).withStairs(getPrimaryStair()).withPillar(getPrimaryWall()).generate(dungeon);
 
-    Coord waystonePos = new Coord(x, floor.getY() + 26, z);
+    Coord waystonePos = new Coord(x, floor.getY() + 23, z);
     editor.generateWaystone(waystonePos);
 
     for (Direction dir : Direction.CARDINAL) {

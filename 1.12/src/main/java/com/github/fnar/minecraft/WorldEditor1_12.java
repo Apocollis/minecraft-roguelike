@@ -475,13 +475,9 @@ public class WorldEditor1_12 implements WorldEditor {
       }
 
       BlockPos basePos = BlockPosMapper1_12.map(pos);
-      BlockPos topPos = basePos.up();
-
       IBlockState baseState = waystoneBlock.getStateFromMeta(0);
-      IBlockState topState = waystoneBlock.getStateFromMeta(8);
 
       world.setBlockState(basePos, baseState, 2);
-      world.setBlockState(topPos, topState, 2);
 
       TileEntity tile = world.getTileEntity(basePos);
       if (tile != null) {
@@ -495,6 +491,10 @@ public class WorldEditor1_12 implements WorldEditor {
           name = (String) getNameMethod.invoke(nameGen, basePos, world.provider.getDimension(), biome, random);
         } catch (Throwable e) {
           logger.info("Could not invoke Waystones NameGenerator via reflection: {}", e.getMessage());
+        }
+
+        if (name != null && name.contains(" ")) {
+          name = name.split(" ")[0];
         }
 
         if (name == null || name.isEmpty()) {
@@ -511,6 +511,7 @@ public class WorldEditor1_12 implements WorldEditor {
         nbt.setString("WaystoneName", fullName);
         nbt.setBoolean("WasGenerated", true);
         nbt.setBoolean("IsGlobal", false);
+        nbt.setBoolean("IsDummy", false);
         tile.readFromNBT(nbt);
         tile.markDirty();
       }
