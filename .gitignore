@@ -33,3 +33,10 @@ minecraft-roguelike.iml
 
 /.idea.backup/checkstyle-idea.xml
 /.idea.backup/workspace.xml
+
+# Agent / AI tooling (local only — do not sync to GitHub)
+.agents/
+.cursor/
+CLAUDE.md
+AGENTS.md
+implementation_plan.md
