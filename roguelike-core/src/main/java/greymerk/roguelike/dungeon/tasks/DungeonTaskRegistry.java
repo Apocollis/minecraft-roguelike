@@ -7,6 +7,7 @@ import java.util.Map;
 
 import greymerk.roguelike.dungeon.DungeonStage;
 
+import static greymerk.roguelike.dungeon.DungeonStage.AFTER;
 import static greymerk.roguelike.dungeon.DungeonStage.ENCASE;
 import static greymerk.roguelike.dungeon.DungeonStage.FILTERS;
 import static greymerk.roguelike.dungeon.DungeonStage.LAYOUT;
@@ -32,6 +33,7 @@ public final class DungeonTaskRegistry {
     addTask(TOWER, new DungeonTaskTower());
     addTask(FILTERS, new DungeonTaskFilters());
     addTask(LOOT, new DungeonTaskLoot());
+    addTask(AFTER, new DungeonTaskSupports());
   }
 
   public static DungeonTaskRegistry getInstance() {
