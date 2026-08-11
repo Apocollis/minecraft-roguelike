@@ -5,57 +5,65 @@ Roguelike Dungeons - Arcana Edition
 [![CurseForge Versions](https://cf.way2muchnoise.eu/versions/fnars-roguelike-dungeons.svg)](https://www.curseforge.com/minecraft/mc-mods/fnars-roguelike-dungeons)  
 [![Support me on Patreon](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3Dfnar%26type%3Dpatrons&style=flat)](https://patreon.com/fnar)
 
-This is a mod for minecraft that adds randomly generated dungeon complexes. This version is a fork of [Greymerk's masterpeice](http://github.com/greymerk/minecraft-roguelike).
+This is a mod for Minecraft that adds randomly generated dungeon complexes. This version is a fork of [Greymerk's masterpiece](http://github.com/greymerk/minecraft-roguelike).
 
-### Clone to desktop
+### Modules
 
-There's documentation for how to clone to desktop here:
+- `roguelike-core` — version-agnostic dungeon logic
+- `1.12` — Forge 1.12.2 bindings (ships the playable jar)
 
-https://help.github.com/articles/set-up-git
+### Clone
 
-Clone the repository using
+```
+git clone https://github.com/Apocollis/minecraft-roguelike
+```
 
-`git clone https://github.com/greymerk/minecraft-roguelike`
+### Build
 
-### Gradle setup
+From the repo root (Java 8):
 
-Open a command window in the minecraft-roguelike directory
+```
+gradlew.bat :1.12:build
+```
 
-type `gradlew setupDecompWorkspace`
-type `gradlew setupDevWorkspace`
+Or from `1.12/`:
 
-### Run MineCraft with the Mod
+```
+gradlew.bat build
+```
 
-type `gradlew runClient`
+The jar is written to `1.12/build/libs/` (e.g. `RoguelikeDungeons-Arcana-1.12.2-2.5.2.jar`).
 
-or 
+A successful `1.12` build also runs `deployToDevbox`, which replaces `RoguelikeDungeons-Arcana-*.jar` in:
 
-type `gradlew runServer`
+`%USERPROFILE%/curseforge/minecraft/Instances/Arcana Quest DEVBOX/mods`
+
+Override the destination with `-Pdevbox.mods.dir=...` if needed.
+
+### Run Minecraft with the mod
+
+From the repo root:
+
+```
+gradlew.bat :1.12:runClient
+gradlew.bat :1.12:runServer
+```
 
 ### Import project
 
 1. In IntelliJ, select File > Open.
-1. Select the `build.gradle` file and select OK.
+2. Select the root `build.gradle` (or `settings.gradle`) and select OK.
 
-### Run Configurations
+### Run configurations
 
 1. In IntelliJ, select Run > Edit Configurations.
-1. Create a new configuration of type `Gradle` 
-1. Choose `minecraft-roguelike` for the project and enter `runClient` for the task.
-1. Do the same for the server, create a new configuration of type `Gradle` with the same project and with `runServer` as the task.
+2. Create a Gradle configuration for project `1.12` with task `runClient`.
+3. Do the same for `runServer`.
 
-### Build
+### External links
 
-Open a command window in minecraft-roguelike and type:
+[TUTORIAL] Getting Started with ForgeGradle  
+http://www.minecraftforge.net/forum/index.php?topic=14048.0
 
-`gradlew build`
-
-The mod jar file should be in build/libs
-
-### External Links
-
-[TUTORIAL] Getting Started with ForgeGradle
-* http://www.minecraftforge.net/forum/index.php?topic=14048.0
-
-Lex's Video regarding gradle
-* https://www.youtube.com/watch?v=8VEdtQLuLO0
+Lex's Video regarding gradle  
+https://www.youtube.com/watch?v=8VEdtQLuLO0

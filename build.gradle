@@ -12,14 +12,11 @@ compileJava {
 
 repositories {
     mavenCentral()
-    jcenter()
 }
-
 
 subprojects {
     apply plugin: 'java'
-    group = 'org.gradle.sample'
-    version = '1.0'
+    group = 'com.github.apocollis'
 }
 
 project(':1.12') {

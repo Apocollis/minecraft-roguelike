@@ -2,7 +2,6 @@ package greymerk.roguelike.dungeon;
 
 public enum DungeonStage {
 
-  BEFORE,
   LAYOUT,
   ENCASE,
   TUNNELS,

@@ -52,7 +52,7 @@ repositories {
 }
 
 dependencies {
-    minecraft 'net.minecraftforge:forge:1.12.2-14.23.5.2859'
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
     implementation project(':roguelike-core')
 
@@ -130,4 +130,34 @@ jar {
     }
 
     from project(':roguelike-core').sourceSets.main.output
+}
+
+def defaultDevboxModsDir = "${System.getProperty('user.home')}/curseforge/minecraft/Instances/Arcana Quest DEVBOX/mods"
+def curseforgeModsDir = file(findProperty('devbox.mods.dir') ?: defaultDevboxModsDir)
+
+tasks.register('deployToDevbox', Copy) {
+    group = 'distribution'
+    description = 'Replace RoguelikeDungeons-Arcana jar in CurseForge Arcana Quest DEVBOX mods'
+    dependsOn jar
+    onlyIf {
+        if (!curseforgeModsDir.exists()) {
+            logger.lifecycle("Skipping deployToDevbox: mods dir not found at ${curseforgeModsDir}")
+            return false
+        }
+        return true
+    }
+    from jar.archiveFile
+    into curseforgeModsDir
+    doFirst {
+        delete fileTree(curseforgeModsDir) {
+            include 'RoguelikeDungeons-Arcana-*.jar'
+        }
+    }
+    doLast {
+        logger.lifecycle("Deployed ${jar.archiveFile.get().asFile.name} to ${curseforgeModsDir}")
+    }
+}
+
+tasks.named('build').configure {
+    finalizedBy('deployToDevbox')
 }

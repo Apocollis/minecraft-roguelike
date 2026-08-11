@@ -474,10 +474,18 @@ public class WorldEditor1_12 implements WorldEditor {
         return;
       }
 
+      // Waystones 1.12 is a 2-high block: BASE=true (meta bit 8) on the lower half,
+      // BASE=false on the upper half. Meta 0 alone places only a dummy top half.
       BlockPos basePos = BlockPosMapper1_12.map(pos);
-      IBlockState baseState = waystoneBlock.getStateFromMeta(0);
+      BlockPos topPos = basePos.up();
+      int facingIndex = net.minecraft.util.EnumFacing.NORTH.getIndex();
+      IBlockState baseState = waystoneBlock.getStateFromMeta(8 | facingIndex);
+      IBlockState topState = waystoneBlock.getStateFromMeta(facingIndex);
 
+      world.setBlockToAir(basePos);
+      world.setBlockToAir(topPos);
       world.setBlockState(basePos, baseState, 2);
+      world.setBlockState(topPos, topState, 2);
 
       TileEntity tile = world.getTileEntity(basePos);
       if (tile != null) {
@@ -514,6 +522,7 @@ public class WorldEditor1_12 implements WorldEditor {
         nbt.setBoolean("IsDummy", false);
         tile.readFromNBT(nbt);
         tile.markDirty();
+        world.notifyBlockUpdate(basePos, baseState, baseState, 3);
       }
     } catch (Throwable t) {
       logger.warn("Failed to generate Waystone at {}: {}", pos, t.getMessage());

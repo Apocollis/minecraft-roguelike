@@ -159,7 +159,9 @@ public class Dungeon {
   }
 
   /**
-   * Find the nearest grid dungeon chunk position using spiral search.
+   * Find the nearest grid dungeon chunk position using spiral search over grid
+   * cells, picking the closest dungeon chunk to the player (not merely the
+   * first spiral ring entry).
    * Used by /roguelike locate and /locate RoguelikeDungeon.
    */
   public static int[] findNearestGridDungeon(long seed, int currentChunkX, int currentChunkZ) {
@@ -173,6 +175,9 @@ public class Dungeon {
 
     int currentGridX = currentChunkX < 0 ? (currentChunkX - maxSpacing + 1) / maxSpacing : currentChunkX / maxSpacing;
     int currentGridZ = currentChunkZ < 0 ? (currentChunkZ - maxSpacing + 1) / maxSpacing : currentChunkZ / maxSpacing;
+
+    int[] best = null;
+    double bestDistSq = Double.MAX_VALUE;
 
     for (int distance = 0; distance <= 100; distance++) {
       for (int x = -distance; x <= distance; x++) {
@@ -191,17 +196,29 @@ public class Dungeon {
               RogueConfig.GRID_SEED_OFFSET.getInt()
           );
 
-          int offsetX = rand.nextInt(offsetMax);
-          int offsetZ = rand.nextInt(offsetMax);
+          int chunkX = cellX * maxSpacing + rand.nextInt(offsetMax);
+          int chunkZ = cellZ * maxSpacing + rand.nextInt(offsetMax);
 
-          int chunkX = cellX * maxSpacing + offsetX;
-          int chunkZ = cellZ * maxSpacing + offsetZ;
+          double dx = (double) chunkX - currentChunkX;
+          double dz = (double) chunkZ - currentChunkZ;
+          double distSq = dx * dx + dz * dz;
+          if (distSq < bestDistSq) {
+            bestDistSq = distSq;
+            best = new int[]{chunkX, chunkZ};
+          }
+        }
+      }
 
-          return new int[]{chunkX, chunkZ};
+      // Further rings cannot beat the current best once the ring's minimum
+      // possible chunk distance exceeds the best found so far.
+      if (best != null && distance > 0) {
+        double ringMin = (double) distance * maxSpacing - offsetMax;
+        if (ringMin > 0 && ringMin * ringMin > bestDistSq) {
+          break;
         }
       }
     }
-    return null;
+    return best;
   }
 
   public static int getLevel(int y) {
@@ -229,6 +246,8 @@ public class Dungeon {
           .map(DungeonLevel::new)
           .forEach(levels::add);
 
+      boolean failed = false;
+
       // Process each stage with thread yielding and progress logging
       DungeonStage[] stages = DungeonStage.values();
       for (int i = 0; i < stages.length; i++) {
@@ -236,22 +255,29 @@ public class Dungeon {
         long stageStart = System.currentTimeMillis();
         List<IDungeonTask> tasks = DungeonTaskRegistry.getInstance().getTasks(stage);
         for (IDungeonTask task : tasks) {
-          performTaskSafely(dungeonSettings, task);
+          if (!performTaskSafely(dungeonSettings, task)) {
+            failed = true;
+          }
         }
         long stageTime = System.currentTimeMillis() - stageStart;
         logger.info("Completed dungeon stage [{}/{}] {} in {}ms", i + 1, stages.length, stage, stageTime);
         Thread.yield();
       }
 
+      if (failed) {
+        logger.error("Dungeon generation finished with task failures for id {} at {}.", dungeonSettings.getId(), coord);
+      } else {
+        logger.info("Successfully generated dungeon with id {} at {}.", dungeonSettings.getId(), coord);
+      }
+
       if (generationEvents != null) {
         generationEvents.eventPost(dungeonSettings.getId(), coord);
       }
-      logger.info("Successfully generated dungeon with id {} at {}.", dungeonSettings.getId(), coord);
       for (DungeonLevel level : levels) {
         postLevelBoundingBoxEventAsync(level, generationPartsEvents, dungeonSettings.getId());
       }
     } catch (Exception e) {
-      e.printStackTrace();
+      logger.error("Dungeon generation failed for id {} at {}.", dungeonSettings.getId(), coord, e);
     }
   }
 
@@ -268,11 +294,13 @@ public class Dungeon {
   }
 
 
-  private void performTaskSafely(DungeonSettings dungeonSettings, IDungeonTask task) {
+  private boolean performTaskSafely(DungeonSettings dungeonSettings, IDungeonTask task) {
     try {
       task.execute(editor, this, dungeonSettings);
+      return true;
     } catch (Exception exception) {
-      logger.error("Dungeon task failed for task " + task.getClass().getName(), exception);
+      logger.error("Dungeon task failed for task {}", task.getClass().getName(), exception);
+      return false;
     }
   }
 
