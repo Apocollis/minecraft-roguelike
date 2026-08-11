@@ -9,8 +9,8 @@ import greymerk.roguelike.dungeon.settings.DungeonSettings;
 import greymerk.roguelike.worldgen.WorldEditor;
 
 /**
- * After the dungeon is fully built, hang arched pillars from the bottom
- * level down into any caves beneath so the floor is not left floating.
+ * After the dungeon is fully built, hang {@code FoundationSupport} struts from
+ * level index 9 (10th / bottom level) so that floor is not left floating over caves.
  */
 public class DungeonTaskSupports implements IDungeonTask {
 

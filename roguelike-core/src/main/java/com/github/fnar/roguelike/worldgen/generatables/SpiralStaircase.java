@@ -30,8 +30,8 @@ public class SpiralStaircase extends BaseGeneratable {
       // place the pillar
       pillar.stroke(worldEditor, layer);
 
-      // place the spiral steps
-      Direction dir = Direction.CARDINAL.get(layer.getY() % 4);
+      // place the spiral steps (floorMod: negative Y is valid for deep levels)
+      Direction dir = Direction.CARDINAL.get(Math.floorMod(layer.getY(), 4));
       Coord step = layer.copy();
       step.translate(dir);
       stairs.setUpsideDown(false).setFacing(dir.antiClockwise()).stroke(worldEditor, step);
