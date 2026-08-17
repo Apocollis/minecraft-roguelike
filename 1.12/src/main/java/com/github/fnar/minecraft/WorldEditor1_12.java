@@ -1,7 +1,6 @@
 package com.github.fnar.minecraft;
 
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import com.github.fnar.forge.ModLoader;
@@ -15,6 +14,9 @@ import com.github.fnar.minecraft.block.SingleBlockBrush;
 import com.github.fnar.minecraft.block.decorative.BedBlock;
 import com.github.fnar.minecraft.block.decorative.PlantType;
 import com.github.fnar.minecraft.block.decorative.Skull;
+import com.github.fnar.minecraft.block.normal.ColoredBlock;
+import com.github.fnar.minecraft.block.normal.SlabBlock;
+import com.github.fnar.minecraft.block.normal.StairsBlock;
 import com.github.fnar.minecraft.block.spawner.SpawnPotentialMapper1_12;
 import com.github.fnar.minecraft.block.spawner.Spawner;
 import com.github.fnar.minecraft.item.CouldNotMapItemException;
@@ -25,17 +27,25 @@ import com.github.fnar.minecraft.item.mapper.PlantMapper1_12;
 import com.github.fnar.minecraft.world.BiomeTag;
 import com.github.fnar.minecraft.world.BiomeTagMapper1_12;
 import com.github.fnar.minecraft.world.BlockPosMapper1_12;
+import com.github.fnar.roguelike.worldgen.DungeonGenerationScheduler;
 
+import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.network.play.server.SPacketChunkData;
 import net.minecraft.tileentity.*;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraftforge.common.BiomeDictionary;
 
@@ -43,7 +53,9 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -52,9 +64,15 @@ import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import greymerk.roguelike.dungeon.DungeonBuildJob;
+import greymerk.roguelike.dungeon.DungeonLevel;
+import greymerk.roguelike.dungeon.RoguelikeDungeonSavedData;
+
+import greymerk.roguelike.dungeon.towers.TowerType;
 import greymerk.roguelike.treasure.TreasureChest;
 import greymerk.roguelike.treasure.TreasureManager;
 import greymerk.roguelike.worldgen.BlockBrush;
+import greymerk.roguelike.worldgen.Bounded;
 import greymerk.roguelike.worldgen.Coord;
 import greymerk.roguelike.worldgen.Direction;
 import greymerk.roguelike.worldgen.VanillaStructure;
@@ -78,10 +96,36 @@ public class WorldEditor1_12 implements WorldEditor {
       Material.CLAY
   );
   private static final ModLoader modLoader = new ModLoader1_12();
+  private static final Set<Block> IRREPLACEABLE_BLOCKS = Sets.newHashSet(
+      Blocks.BED,
+      Blocks.BEDROCK,
+      Blocks.CHEST,
+      Blocks.END_PORTAL,
+      Blocks.END_PORTAL_FRAME,
+      Blocks.MOB_SPAWNER,
+      Blocks.TRAPPED_CHEST
+  );
+  private static final int MAX_TRACKED_LIGHTS = 1024;
+
   private final World world;
   private final Map<BlockType, Integer> stats = new HashMap<>();
   private final Random random;
   private final TreasureManager treasureManager;
+  private final Set<ChunkPos> bulkDirtyChunks = new HashSet<>();
+  private final List<BlockPos> bulkLights = new ArrayList<>();
+
+  private int bulkDepth;
+  private boolean bulkBoundsSet;
+  private int bulkMinX;
+  private int bulkMinY;
+  private int bulkMinZ;
+  private int bulkMaxX;
+  private int bulkMaxY;
+  private int bulkMaxZ;
+  private IBlockState mappedStateCache;
+  private SingleBlockBrush mappedBrushCache;
+  private Direction mappedFacingCache;
+  private int mappedExtraCache = Integer.MIN_VALUE;
 
   public WorldEditor1_12(World world) {
     this.world = world;
@@ -206,18 +250,26 @@ public class WorldEditor1_12 implements WorldEditor {
 
   @Override
   public boolean setBlock(Coord coord, SingleBlockBrush singleBlockBrush, boolean fillAir, boolean replaceSolid) {
-    if (cantReplaceBlock(coord, fillAir, replaceSolid)) {
+    if (fillAir && replaceSolid) {
+      if (isIrreplaceableBlock(coord)) {
+        return false;
+      }
+    } else if (cantReplaceBlock(coord, fillAir, replaceSolid)) {
       return false;
     }
 
-    IBlockState state;
-    try {
-      state = BlockMapper1_12.map(singleBlockBrush);
-    } catch (CouldNotMapBlockException e) {
-      logger.info(e);
+    IBlockState state = mapBrushCached(singleBlockBrush);
+    if (state == null) {
       return false;
     }
-    world.setBlockState(BlockPosMapper1_12.map(coord), state, 2);
+
+    BlockPos pos = BlockPosMapper1_12.map(coord);
+    if (bulkDepth > 0 && canBulkPlace(state)) {
+      world.getChunkFromBlockCoords(pos).setBlockState(pos, state);
+      recordBulkPlacement(pos, state);
+    } else {
+      world.setBlockState(pos, state, 2);
+    }
 
     setColorIfBed(coord, singleBlockBrush);
 
@@ -230,6 +282,163 @@ public class WorldEditor1_12 implements WorldEditor {
     return true;
   }
 
+  private IBlockState mapBrushCached(SingleBlockBrush brush) {
+    int extra = mappingExtra(brush);
+    if (brush == mappedBrushCache
+        && brush.getFacing() == mappedFacingCache
+        && extra == mappedExtraCache
+        && mappedStateCache != null) {
+      return mappedStateCache;
+    }
+    try {
+      mappedStateCache = BlockMapper1_12.map(brush);
+    } catch (CouldNotMapBlockException e) {
+      logger.info(e);
+      mappedStateCache = null;
+      mappedBrushCache = null;
+      return null;
+    }
+    mappedBrushCache = brush;
+    mappedFacingCache = brush.getFacing();
+    mappedExtraCache = extra;
+    return mappedStateCache;
+  }
+
+  private static int mappingExtra(SingleBlockBrush brush) {
+    int extra = 0;
+    if (brush instanceof StairsBlock) {
+      extra |= ((StairsBlock) brush).isUpsideDown() ? 1 : 0;
+    }
+    if (brush instanceof SlabBlock) {
+      SlabBlock slab = (SlabBlock) brush;
+      extra |= slab.isTop() ? 2 : 0;
+      extra |= slab.isFullBlock() ? 4 : 0;
+      extra |= slab.isSeamless() ? 8 : 0;
+    }
+    if (brush instanceof ColoredBlock) {
+      extra |= ((ColoredBlock) brush).getColor().ordinal() << 4;
+    }
+    extra |= brush.isWaterlogged() ? 1 << 12 : 0;
+    return extra;
+  }
+
+  private static boolean canBulkPlace(IBlockState state) {
+    Block block = state.getBlock();
+    if (block.hasTileEntity(state)) {
+      return false;
+    }
+    if (block == Blocks.AIR) {
+      return true;
+    }
+    return state.isOpaqueCube() && state.getLightValue() == 0;
+  }
+
+  private void recordBulkPlacement(BlockPos pos, IBlockState state) {
+    int x = pos.getX();
+    int y = pos.getY();
+    int z = pos.getZ();
+    if (!bulkBoundsSet) {
+      bulkMinX = bulkMaxX = x;
+      bulkMinY = bulkMaxY = y;
+      bulkMinZ = bulkMaxZ = z;
+      bulkBoundsSet = true;
+    } else {
+      if (x < bulkMinX) {
+        bulkMinX = x;
+      }
+      if (x > bulkMaxX) {
+        bulkMaxX = x;
+      }
+      if (y < bulkMinY) {
+        bulkMinY = y;
+      }
+      if (y > bulkMaxY) {
+        bulkMaxY = y;
+      }
+      if (z < bulkMinZ) {
+        bulkMinZ = z;
+      }
+      if (z > bulkMaxZ) {
+        bulkMaxZ = z;
+      }
+    }
+    bulkDirtyChunks.add(new ChunkPos(pos));
+    if (state.getLightValue() > 0 && bulkLights.size() < MAX_TRACKED_LIGHTS) {
+      bulkLights.add(pos.toImmutable());
+    }
+  }
+
+  @Override
+  public void beginBulkPlacement() {
+    bulkDepth++;
+  }
+
+  @Override
+  public void endBulkPlacement() {
+    if (bulkDepth <= 0) {
+      return;
+    }
+    bulkDepth--;
+    if (bulkDepth == 0) {
+      flushBulkPlacement();
+    }
+  }
+
+  @Override
+  public boolean isWorldAvailable() {
+    return world != null && !world.isRemote;
+  }
+
+  @Override
+  public void enqueueDungeonBuild(DungeonBuildJob job) {
+    DungeonGenerationScheduler.enqueue(world, job);
+  }
+
+  private void flushBulkPlacement() {
+    if (!bulkBoundsSet && bulkDirtyChunks.isEmpty()) {
+      return;
+    }
+
+    for (BlockPos light : bulkLights) {
+      world.checkLight(light);
+    }
+    if (bulkBoundsSet) {
+      for (int x = bulkMinX; x <= bulkMaxX; x += 8) {
+        for (int y = bulkMinY; y <= bulkMaxY; y += 8) {
+          for (int z = bulkMinZ; z <= bulkMaxZ; z += 8) {
+            world.checkLight(new BlockPos(x, y, z));
+          }
+        }
+      }
+      world.markBlockRangeForRenderUpdate(bulkMinX, bulkMinY, bulkMinZ, bulkMaxX, bulkMaxY, bulkMaxZ);
+    }
+
+    if (world instanceof WorldServer) {
+      WorldServer worldServer = (WorldServer) world;
+      for (ChunkPos chunkPos : bulkDirtyChunks) {
+        Chunk chunk = world.getChunkFromChunkCoords(chunkPos.x, chunkPos.z);
+        chunk.markDirty();
+        notifyPlayersOfChunk(worldServer, chunk, chunkPos);
+      }
+    }
+
+    bulkDirtyChunks.clear();
+    bulkLights.clear();
+    bulkBoundsSet = false;
+  }
+
+  private static void notifyPlayersOfChunk(WorldServer worldServer, Chunk chunk, ChunkPos chunkPos) {
+    for (EntityPlayer player : worldServer.playerEntities) {
+      if (!(player instanceof EntityPlayerMP)) {
+        continue;
+      }
+      if (Math.abs(player.chunkCoordX - chunkPos.x) > 8 || Math.abs(player.chunkCoordZ - chunkPos.z) > 8) {
+        continue;
+      }
+      ((EntityPlayerMP) player).connection.sendPacket(new SPacketChunkData(chunk, 65535));
+    }
+  }
+
   private boolean cantReplaceBlock(Coord coord, boolean fillAir, boolean replaceSolid) {
     return isIrreplaceableBlock(coord)
         || cantReplaceAir(coord, fillAir)
@@ -237,19 +446,7 @@ public class WorldEditor1_12 implements WorldEditor {
   }
 
   private boolean isIrreplaceableBlock(Coord coord) {
-    return blocksToNotReplace().stream().anyMatch(blockType -> isBlockOfTypeAt(blockType, coord));
-  }
-
-  private List<BlockType> blocksToNotReplace() {
-    return Lists.newArrayList(
-        BlockType.BED,
-        BlockType.BEDROCK,
-        BlockType.CHEST,
-        BlockType.END_PORTAL,
-        BlockType.END_PORTAL_FRAME,
-        BlockType.SPAWNER,
-        BlockType.TRAPPED_CHEST
-    );
+    return IRREPLACEABLE_BLOCKS.contains(getBlockStateAt(coord).getBlock());
   }
 
   private boolean cantReplaceAir(Coord coord, boolean fillAir) {
@@ -527,6 +724,54 @@ public class WorldEditor1_12 implements WorldEditor {
     } catch (Throwable t) {
       logger.warn("Failed to generate Waystone at {}: {}", pos, t.getMessage());
     }
+  }
+
+  @Override
+  public void registerDungeonStructure(Coord origin, List<DungeonLevel> levels) {
+    if (world == null || world.isRemote || origin == null) {
+      return;
+    }
+    Coord base = TowerType.getBaseCoord(this, origin);
+    if (base == null) {
+      return;
+    }
+
+    List<RoguelikeDungeonSavedData.DungeonBoundingBox> boxes = new ArrayList<>();
+    int towerRadius = 16;
+    boxes.add(new RoguelikeDungeonSavedData.DungeonBoundingBox(
+        base.getX() - towerRadius, base.getY() - 30, base.getZ() - towerRadius,
+        base.getX() + towerRadius, base.getY() + 30, base.getZ() + towerRadius,
+        -1
+    ));
+
+    if (levels != null) {
+      for (int i = 0; i < levels.size(); i++) {
+        DungeonLevel level = levels.get(i);
+        if (level == null || level.getLayout() == null) {
+          continue;
+        }
+        List<Bounded> layoutBoxes = level.getLayout().getBoundingBoxes();
+        if (layoutBoxes == null) {
+          continue;
+        }
+        for (Bounded box : layoutBoxes) {
+          if (box == null || box.getStart() == null || box.getEnd() == null) {
+            continue;
+          }
+          int minX = Math.min(box.getStart().getX(), box.getEnd().getX());
+          int maxX = Math.max(box.getStart().getX(), box.getEnd().getX());
+          int minY = Math.min(box.getStart().getY(), box.getEnd().getY()) - 1;
+          int maxY = Math.max(box.getStart().getY(), box.getEnd().getY()) + 4;
+          int minZ = Math.min(box.getStart().getZ(), box.getEnd().getZ());
+          int maxZ = Math.max(box.getStart().getZ(), box.getEnd().getZ());
+          boxes.add(new RoguelikeDungeonSavedData.DungeonBoundingBox(
+              minX, minY, minZ, maxX, maxY, maxZ, i));
+        }
+      }
+    }
+
+    RoguelikeDungeonSavedData.get(world).addDungeonBoxes(boxes);
+    logger.info("Registered {} Roguelike dungeon structure boxes at {}", boxes.size(), origin);
   }
 
   @Override

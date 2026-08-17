@@ -37,7 +37,7 @@ public class DungeonCommand extends BaseRoguelikeCommand {
     WorldEditor editor = context.createEditor();
     DungeonSettings dungeonSettings = chooseDungeonSettings(SettingsResolver.getInstance(context.getModLoader()), settingName, coord, editor);
     new Dungeon(editor).timedGenerate(dungeonSettings, coord);
-    context.sendSuccess("generateddungeon", String.format("%s at %s.", dungeonSettings.getId(), coord));
+    context.sendSuccess("generateddungeon", String.format("queued %s at %s.", dungeonSettings.getId(), coord));
     return true;
   }
 

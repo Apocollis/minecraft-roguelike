@@ -15,6 +15,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 
+import greymerk.roguelike.dungeon.DungeonBuildJob;
+import greymerk.roguelike.dungeon.DungeonLevel;
 import greymerk.roguelike.treasure.TreasureChest;
 import greymerk.roguelike.treasure.TreasureManager;
 
@@ -83,4 +85,29 @@ public interface WorldEditor {
   ModLoader getModLoader();
 
   void generateWaystone(Coord pos);
+
+  /**
+   * Enter bulk placement: skip per-block lighting/client notify for simple blocks.
+   * Must be paired with {@link #endBulkPlacement()}.
+   */
+  default void beginBulkPlacement() {
+  }
+
+  /** Flush lighting and client updates for the current bulk region. */
+  default void endBulkPlacement() {
+  }
+
+  /** False when the backing world is gone or client-side. */
+  default boolean isWorldAvailable() {
+    return true;
+  }
+
+  /** Queue a dungeon job for tick-sliced generation, or run it now if unsupported. */
+  default void enqueueDungeonBuild(DungeonBuildJob job) {
+    job.runToCompletion();
+  }
+
+  /** Persist dungeon AABBs for structure queries. No-op unless the editor has a world. */
+  default void registerDungeonStructure(Coord origin, List<DungeonLevel> levels) {
+  }
 }

@@ -3,6 +3,7 @@ package com.github.fnar.roguelike;
 import com.github.fnar.roguelike.command.RoguelikeCommand1_12;
 import com.github.fnar.roguelike.events.SubscriberTester;
 import com.github.fnar.roguelike.worldgen.DungeonGenerator1_12;
+import com.github.fnar.roguelike.worldgen.DungeonGenerationScheduler;
 
 import net.minecraft.command.ICommandManager;
 import net.minecraft.command.ServerCommandManager;
@@ -21,6 +22,7 @@ import org.apache.logging.log4j.Logger;
 
 import greymerk.roguelike.EntityJoinWorld1_12;
 import greymerk.roguelike.ItemTooltip;
+import greymerk.roguelike.command.CommandWhereAmI;
 import greymerk.roguelike.dungeon.Dungeon;
 
 @Mod(modid = "roguelike", name = "Roguelike Dungeons -- Arcana Edition", version = Roguelike.version, acceptableRemoteVersions = "*")
@@ -45,6 +47,7 @@ public class Roguelike {
     MinecraftForge.EVENT_BUS.register(new EntityJoinWorld1_12());
     MinecraftForge.EVENT_BUS.register(new ItemTooltip());
     MinecraftForge.EVENT_BUS.register(SubscriberTester.class);
+    MinecraftForge.EVENT_BUS.register(new DungeonGenerationScheduler());
   }
 
   @EventHandler
@@ -53,5 +56,6 @@ public class Roguelike {
     ICommandManager command = server.getCommandManager();
     ServerCommandManager serverCommand = ((ServerCommandManager) command);
     serverCommand.registerCommand(new RoguelikeCommand1_12());
+    serverCommand.registerCommand(new CommandWhereAmI());
   }
 }

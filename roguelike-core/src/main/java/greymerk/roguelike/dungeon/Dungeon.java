@@ -26,7 +26,6 @@ import greymerk.roguelike.dungeon.settings.SettingIdentifier;
 import greymerk.roguelike.dungeon.settings.SettingsRandom;
 import greymerk.roguelike.dungeon.settings.SettingsResolver;
 import greymerk.roguelike.dungeon.settings.SpawnCriteria;
-import greymerk.roguelike.dungeon.tasks.DungeonTaskRegistry;
 import greymerk.roguelike.dungeon.tasks.IDungeonTask;
 import greymerk.roguelike.dungeon.towers.TowerType;
 import greymerk.roguelike.theme.Theme;
@@ -229,55 +228,38 @@ public class Dungeon {
   }
 
   public void timedGenerate(DungeonSettings dungeonSettings, Coord coord) {
-    if (generationEvents != null) {
-      generationEvents.eventPre(dungeonSettings.getId(), coord);
-    }
-    new TimedTask("Dungeon.generate()", () -> generate(dungeonSettings, coord)).run();
+    DungeonBuildJob job = new DungeonBuildJob(
+        editor,
+        this,
+        dungeonSettings,
+        coord,
+        generationEvents,
+        generationPartsEvents);
+    logger.info("Queuing dungeon generation for id {} at {}...", dungeonSettings.getId(), coord);
+    editor.enqueueDungeonBuild(job);
   }
 
   public void generate(DungeonSettings dungeonSettings, Coord coord) {
-    logger.info("Trying to spawn dungeon with id {} at {}...", dungeonSettings.getId(), coord);
-    try {
+    new DungeonBuildJob(editor, this, dungeonSettings, coord, generationEvents, generationPartsEvents)
+        .runToCompletion();
+  }
 
-      origin = coord.copy().setY(TOPLEVEL);
+  void beginBuild(Coord coord, DungeonSettings dungeonSettings) {
+    origin = coord.copy().setY(TOPLEVEL);
+    levels.clear();
+    IntStream.range(0, dungeonSettings.getNumLevels())
+        .mapToObj(dungeonSettings::getLevelSettings)
+        .map(DungeonLevel::new)
+        .forEach(levels::add);
+  }
 
-      IntStream.range(0, dungeonSettings.getNumLevels())
-          .mapToObj(dungeonSettings::getLevelSettings)
-          .map(DungeonLevel::new)
-          .forEach(levels::add);
+  boolean executeTaskSafely(DungeonSettings dungeonSettings, IDungeonTask task) {
+    return performTaskSafely(dungeonSettings, task);
+  }
 
-      boolean failed = false;
-
-      // Process each stage with thread yielding and progress logging
-      DungeonStage[] stages = DungeonStage.values();
-      for (int i = 0; i < stages.length; i++) {
-        DungeonStage stage = stages[i];
-        long stageStart = System.currentTimeMillis();
-        List<IDungeonTask> tasks = DungeonTaskRegistry.getInstance().getTasks(stage);
-        for (IDungeonTask task : tasks) {
-          if (!performTaskSafely(dungeonSettings, task)) {
-            failed = true;
-          }
-        }
-        long stageTime = System.currentTimeMillis() - stageStart;
-        logger.info("Completed dungeon stage [{}/{}] {} in {}ms", i + 1, stages.length, stage, stageTime);
-        Thread.yield();
-      }
-
-      if (failed) {
-        logger.error("Dungeon generation finished with task failures for id {} at {}.", dungeonSettings.getId(), coord);
-      } else {
-        logger.info("Successfully generated dungeon with id {} at {}.", dungeonSettings.getId(), coord);
-      }
-
-      if (generationEvents != null) {
-        generationEvents.eventPost(dungeonSettings.getId(), coord);
-      }
-      for (DungeonLevel level : levels) {
-        postLevelBoundingBoxEventAsync(level, generationPartsEvents, dungeonSettings.getId());
-      }
-    } catch (Exception e) {
-      logger.error("Dungeon generation failed for id {} at {}.", dungeonSettings.getId(), coord, e);
+  void postLevelBoundingBoxes(GenerationPartsEvent eventBus, SettingIdentifier id) {
+    for (DungeonLevel level : levels) {
+      postLevelBoundingBoxEventAsync(level, eventBus, id);
     }
   }
 
@@ -434,6 +416,13 @@ public class Dungeon {
 
   public List<DungeonLevel> getLevels() {
     return levels;
+  }
+
+  public void registerStructureBoxes() {
+    if (origin == null) {
+      return;
+    }
+    editor.registerDungeonStructure(origin, levels);
   }
 
   public void generateLayout(WorldEditor editor) {
