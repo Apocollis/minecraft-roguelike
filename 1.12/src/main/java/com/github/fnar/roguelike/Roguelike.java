@@ -12,8 +12,10 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.Mod.Instance;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLServerStartedEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import net.minecraftforge.fml.common.registry.GameRegistry;
 
@@ -57,5 +59,17 @@ public class Roguelike {
     ServerCommandManager serverCommand = ((ServerCommandManager) command);
     serverCommand.registerCommand(new RoguelikeCommand1_12());
     serverCommand.registerCommand(new CommandWhereAmI());
+  }
+
+  @EventHandler
+  public void serverStarted(FMLServerStartedEvent event) {
+    MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
+    if (server == null) {
+      return;
+    }
+    ICommandManager command = server.getCommandManager();
+    if (command instanceof ServerCommandManager) {
+      ((ServerCommandManager) command).registerCommand(new CommandWhereAmI());
+    }
   }
 }

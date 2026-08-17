@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
 
-@Mixin(CommandLocate.class)
+@Mixin(value = CommandLocate.class, remap = false)
 public class MixinCommandLocate {
 
     @Inject(method = "func_184883_a", at = @At("HEAD"), cancellable = true)

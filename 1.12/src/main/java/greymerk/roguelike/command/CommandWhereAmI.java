@@ -53,22 +53,20 @@ public class CommandWhereAmI extends CommandBase {
         : "unknown";
 
     List<String> inside = new ArrayList<>();
+    int dungeonLevel = RoguelikeDungeonSavedData.get(world).getDungeonLevel(pos);
+    if (dungeonLevel == -1) {
+      inside.add("RoguelikeDungeon (Tower)");
+    } else if (dungeonLevel >= 0) {
+      inside.add("RoguelikeDungeon (Floor " + (dungeonLevel + 1) + ")");
+    }
+
     if (world.getChunkProvider() instanceof ChunkProviderServer) {
       ChunkProviderServer provider = (ChunkProviderServer) world.getChunkProvider();
       for (String struct : STRUCTURE_NAMES) {
-        if (!provider.isInsideStructure(world, struct, pos)) {
+        if ("RoguelikeDungeon".equals(struct)) {
           continue;
         }
-        if ("RoguelikeDungeon".equals(struct)) {
-          int level = RoguelikeDungeonSavedData.get(world).getDungeonLevel(pos);
-          if (level == -1) {
-            inside.add("RoguelikeDungeon (Tower)");
-          } else if (level >= 0) {
-            inside.add("RoguelikeDungeon (Floor " + (level + 1) + ")");
-          } else {
-            inside.add("RoguelikeDungeon");
-          }
-        } else {
+        if (provider.isInsideStructure(world, struct, pos)) {
           inside.add(struct);
         }
       }
