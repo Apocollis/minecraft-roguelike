@@ -2,7 +2,7 @@ apply plugin: 'idea'
 apply plugin: 'java'
 apply plugin: 'java-library'
 
-version = "2.5.2"
+version = "2.5.3"
 group = "com.github.apocollis"
 archivesBaseName = "RoguelikeCore"
 
