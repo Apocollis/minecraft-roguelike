@@ -1,6 +1,5 @@
 package greymerk.roguelike.dungeon.rooms.prototype;
 
-import com.github.fnar.minecraft.block.BlockType;
 import com.github.fnar.minecraft.block.SingleBlockBrush;
 import com.github.fnar.minecraft.block.spawner.MobType;
 
@@ -270,7 +269,7 @@ public class DungeonsPrison extends BaseRoom {
       return;
     }
 
-    BlockBrush bar = BlockType.IRON_BAR.getBrush();
+    BlockBrush bar = secondaryBarsBrush();
 
     Coord start = origin.copy();
     Coord end = origin.copy();

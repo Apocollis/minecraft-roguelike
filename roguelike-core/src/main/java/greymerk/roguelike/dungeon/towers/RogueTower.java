@@ -1,6 +1,5 @@
 package greymerk.roguelike.dungeon.towers;
 
-import com.github.fnar.minecraft.block.BlockType;
 import com.github.fnar.minecraft.block.SingleBlockBrush;
 import com.github.fnar.minecraft.block.decorative.TorchBlock;
 import com.github.fnar.roguelike.worldgen.generatables.SpiralStaircase;
@@ -178,7 +177,7 @@ public class RogueTower extends Tower {
         cursor.up(1);
         SingleBlockBrush.AIR.stroke(editor, cursor);
         cursor.translate(orthogonals, 2);
-        BlockType.IRON_BAR.getBrush().stroke(editor, cursor);
+        getSecondaryBars().stroke(editor, cursor);
       }
     }
 

@@ -288,7 +288,7 @@ public class DungeonsSmithy extends BaseRoom {
     StairsBlock stair = StairsBlock.brick();
     BlockBrush brick = BlockType.BRICK.getBrush();
     BlockBrush brickSlab = SlabBlock.brick();
-    BlockBrush bars = BlockType.IRON_BAR.getBrush();
+    BlockBrush bars = secondaryBarsBrush();
 
     Coord start = origin.copy();
     start.translate(entranceDirection, 4);

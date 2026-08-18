@@ -2,7 +2,6 @@ package com.github.fnar.roguelike.worldgen.generatables.thresholds;
 
 import com.google.common.collect.Maps;
 
-import com.github.fnar.minecraft.block.BlockType;
 import com.github.fnar.roguelike.worldgen.BlockPattern;
 import com.github.fnar.roguelike.worldgen.generatables.BaseGeneratable;
 
@@ -21,7 +20,7 @@ public class IronBarredEntryway extends BaseGeneratable {
   public IronBarredEntryway generate(Coord at) {
     Map<Character, BlockBrush> blockBrushMap = Maps.newHashMap();
     blockBrushMap.put('W', levelSettings.getTheme().getPrimary().getWall());
-    blockBrushMap.put('#', BlockType.IRON_BAR.getBrush());
+    blockBrushMap.put('#', levelSettings.getTheme().getSecondary().getBars());
 
     String pattern = "" +
         "W # # # W \n\n" +

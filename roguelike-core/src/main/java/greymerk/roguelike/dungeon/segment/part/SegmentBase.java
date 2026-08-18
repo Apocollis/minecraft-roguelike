@@ -96,6 +96,10 @@ public abstract class SegmentBase {
     return theme.getSecondary().getLightBlock();
   }
 
+  protected BlockBrush getSecondaryBars(Theme theme) {
+    return theme.getSecondary().getBars();
+  }
+
   protected StairsBlock getPrimaryStairs(Theme theme) {
     return theme.getPrimary().getStair();
   }

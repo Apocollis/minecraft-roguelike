@@ -35,9 +35,9 @@ public class SegmentSewerArch extends SegmentBase {
 
     cursor = origin.copy();
     cursor.translate(dir, 2);
-    BlockType.IRON_BAR.getBrush().stroke(editor, cursor);
+    getSecondaryBars(theme).stroke(editor, cursor);
     cursor.up();
-    BlockType.IRON_BAR.getBrush().stroke(editor, cursor);
+    getSecondaryBars(theme).stroke(editor, cursor);
 
     Coord start = origin.copy();
     start.down();

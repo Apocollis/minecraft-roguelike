@@ -41,7 +41,7 @@ public class SegmentFireArch extends SegmentBase {
     cursor.up();
     BlockType.FIRE.getBrush().stroke(editor, cursor);
     cursor.translate(dir.reverse());
-    BlockType.IRON_BAR.getBrush().stroke(editor, cursor);
+    getSecondaryBars(theme).stroke(editor, cursor);
 
     for (Direction orthogonal : orthogonals) {
 

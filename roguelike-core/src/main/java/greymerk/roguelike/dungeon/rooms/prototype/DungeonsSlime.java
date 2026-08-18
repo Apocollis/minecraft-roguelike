@@ -1,6 +1,5 @@
 package greymerk.roguelike.dungeon.rooms.prototype;
 
-import com.github.fnar.minecraft.block.BlockType;
 import com.github.fnar.minecraft.block.SingleBlockBrush;
 import com.github.fnar.roguelike.worldgen.generatables.Pillar;
 
@@ -79,7 +78,7 @@ public class DungeonsSlime extends BaseRoom {
       Coord start = origin.copy().translate(dir, 2).translate(dir.antiClockwise());
       Coord end = origin.copy().translate(dir, 2).translate(dir.clockwise());
       RectSolid railingCoords = RectSolid.newRect(start, end);
-      BlockType.IRON_BAR.getBrush().fill(worldEditor, railingCoords);
+      secondaryBarsBrush().fill(worldEditor, railingCoords);
     }
   }
 
@@ -166,7 +165,7 @@ public class DungeonsSlime extends BaseRoom {
     Coord end = start.copy();
     start.translate(dir.antiClockwise(), 2);
     end.translate(dir.clockwise(), 2);
-    BlockType.IRON_BAR.getBrush().fill(worldEditor, RectSolid.newRect(start, end));
+    secondaryBarsBrush().fill(worldEditor, RectSolid.newRect(start, end));
   }
 
 }

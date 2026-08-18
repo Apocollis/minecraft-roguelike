@@ -33,6 +33,8 @@ public class ThemeTest {
     Theme t = ThemeParser.parse(json);
     SingleBlockBrush floorBrush = (SingleBlockBrush) t.getPrimary().getFloor();
     assertThat(floorBrush.getJson()).isEqualTo(primaryFloor);
+    assertThat(t.getPrimary().getBars()).isEqualTo(BlockType.IRON_BAR.getBrush());
+    assertThat(t.getSecondary().getBars()).isEqualTo(BlockType.IRON_BAR.getBrush());
   }
 
   @Test
@@ -195,6 +197,7 @@ public class ThemeTest {
     assertThat(actual.getPrimary().getDoor()).isEqualTo(DoorBlock.oak());
     assertThat(actual.getPrimary().getLightBlock()).isEqualTo(BlockType.GLOWSTONE.getBrush());
     assertThat(actual.getPrimary().getLiquid()).isEqualTo(BlockType.WATER_FLOWING.getBrush());
+    assertThat(actual.getPrimary().getBars()).isEqualTo(BlockType.IRON_BAR.getBrush());
 
     assertThat(actual.getSecondary().getFloor()).isEqualTo(BlockType.OAK_PLANK.getBrush());
     assertThat(actual.getSecondary().getWall()).isEqualTo(BlockType.STONE_BRICKS.getBrush());
@@ -203,5 +206,6 @@ public class ThemeTest {
     assertThat(actual.getSecondary().getDoor()).isEqualTo(DoorBlock.oak());
     assertThat(actual.getSecondary().getLightBlock()).isEqualTo(BlockType.GLOWSTONE.getBrush());
     assertThat(actual.getSecondary().getLiquid()).isEqualTo(BlockType.WATER_FLOWING.getBrush());
+    assertThat(actual.getSecondary().getBars()).isEqualTo(BlockType.IRON_BAR.getBrush());
   }
 }

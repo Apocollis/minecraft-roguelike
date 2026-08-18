@@ -1,7 +1,5 @@
 package greymerk.roguelike.dungeon.rooms.prototype;
 
-import com.github.fnar.minecraft.block.BlockType;
-
 import java.util.List;
 
 import greymerk.roguelike.dungeon.base.BaseRoom;
@@ -54,7 +52,7 @@ public class LinkerRoom extends BaseRoom {
   private void generateGrate(Coord at, Direction dir) {
     Coord start = at.copy().translate(dir, 4).down().translate(dir.antiClockwise(), 4);
     Coord end = at.copy().translate(dir, 4).up(8).translate(dir.clockwise(), 4);
-    RectSolid.newRect(start, end).fill(worldEditor, BlockType.IRON_BAR.getBrush(), true, false);
+    RectSolid.newRect(start, end).fill(worldEditor, primaryBarsBrush(), true, false);
   }
 
   private void generateCorner(Coord at, Direction dir) {

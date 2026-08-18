@@ -50,7 +50,7 @@ public class SegmentFirePlace extends SegmentBase {
     stair.setUpsideDown(false).setFacing(dir.reverse());
     stair.stroke(editor, cursor);
     cursor.up();
-    BlockType.IRON_BAR.getBrush().stroke(editor, cursor);
+    getSecondaryBars(theme).stroke(editor, cursor);
     cursor.up();
     stair.setUpsideDown(true).setFacing(dir.reverse());
     stair.stroke(editor, cursor);

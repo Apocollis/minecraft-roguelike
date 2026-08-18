@@ -53,7 +53,7 @@ public class DungeonsFire extends BaseRoom {
       cursor.translate(dir);
       stair.setUpsideDown(false).setFacing(dir).stroke(editor, cursor, true, false);
       cursor.up();
-      BlockType.IRON_BAR.getBrush().stroke(editor, cursor);
+      theme.getSecondary().getBars().stroke(editor, cursor);
       cursor.up();
       stair.setUpsideDown(true).setFacing(dir).stroke(editor, cursor, true, false);
 

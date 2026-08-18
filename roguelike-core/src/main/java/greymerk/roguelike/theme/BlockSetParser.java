@@ -25,7 +25,8 @@ class BlockSetParser {
         parsePillar(json).orElse(baseBlockSet.getPillar()),
         parseDoor(json).orElse(baseBlockSet.getDoor()),
         parseLightBlock(json).orElse(baseBlockSet.getLightBlock()),
-        parseLiquid(json).orElse(baseBlockSet.getLiquid())
+        parseLiquid(json).orElse(baseBlockSet.getLiquid()),
+        parseBars(json).orElse(baseBlockSet.getBars())
     );
   }
 
@@ -77,6 +78,12 @@ class BlockSetParser {
   private static Optional<BlockBrush> parseLiquid(JsonObject json) throws DungeonSettingParseException {
     return json.has("liquid")
         ? ofNullable(BlockProvider.create(json.get("liquid").getAsJsonObject()))
+        : empty();
+  }
+
+  private static Optional<BlockBrush> parseBars(JsonObject json) throws DungeonSettingParseException {
+    return json.has("bars")
+        ? ofNullable(BlockProvider.create(json.get("bars").getAsJsonObject()))
         : empty();
   }
 }

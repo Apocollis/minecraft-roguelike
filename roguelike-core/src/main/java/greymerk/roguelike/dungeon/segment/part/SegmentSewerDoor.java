@@ -23,7 +23,7 @@ public class SegmentSewerDoor extends SegmentBase {
   protected void genWall(WorldEditor editor, DungeonLevel level, Direction dir, Theme theme, Coord origin) {
 
     StairsBlock stair = getSecondaryStairs(theme);
-    BlockBrush bars = BlockType.IRON_BAR.getBrush();
+    BlockBrush bars = getSecondaryBars(theme);
     BlockBrush water = BlockType.WATER_FLOWING.getBrush();
     BlockBrush leaves = Wood.SPRUCE.getLeaves();
     BlockBrush glowstone = getSecondaryLightBlock(theme);

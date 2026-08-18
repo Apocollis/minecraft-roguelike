@@ -44,7 +44,7 @@ public class BlazeRoom extends BaseRoom {
       cursor.translate(dir);
       primaryStairBrush().setUpsideDown(false).setFacing(dir).stroke(worldEditor, cursor, true, false);
       cursor.up();
-      BlockType.IRON_BAR.getBrush().stroke(worldEditor, cursor);
+      secondaryBarsBrush().stroke(worldEditor, cursor);
       cursor.up();
       primaryStairBrush().setUpsideDown(true).setFacing(dir).stroke(worldEditor, cursor, true, false);
 

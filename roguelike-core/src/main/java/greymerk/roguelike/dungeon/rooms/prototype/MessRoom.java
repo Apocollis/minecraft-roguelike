@@ -283,7 +283,7 @@ public class MessRoom extends BaseRoom {
 
     Coord cursor = origin.copy();
     cursor.translate(dir, 6);
-    BlockType.IRON_BAR.getBrush().stroke(worldEditor, cursor);
+    secondaryBarsBrush().stroke(worldEditor, cursor);
     cursor.translate(dir);
     cursor.down();
     BlockType.NETHERRACK.getBrush().stroke(worldEditor, cursor);
@@ -298,7 +298,7 @@ public class MessRoom extends BaseRoom {
 
     for (Direction o : dir.orthogonals()) {
       cursor = origin.copy().translate(dir, 6).translate(o);
-      BlockType.IRON_BAR.getBrush().stroke(worldEditor, cursor);
+      secondaryBarsBrush().stroke(worldEditor, cursor);
       cursor.translate(o);
       theme().getPrimary().getWall().stroke(worldEditor, cursor);
       cursor.up();
@@ -311,7 +311,7 @@ public class MessRoom extends BaseRoom {
       primaryStairBrush().setUpsideDown(false).setFacing(o).stroke(worldEditor, cursor);
 
       cursor = origin.copy().translate(dir, 6).translate(o);
-      BlockType.IRON_BAR.getBrush().stroke(worldEditor, cursor);
+      secondaryBarsBrush().stroke(worldEditor, cursor);
       cursor.translate(dir).down();
       BlockType.NETHERRACK.getBrush().stroke(worldEditor, cursor);
       cursor.up();

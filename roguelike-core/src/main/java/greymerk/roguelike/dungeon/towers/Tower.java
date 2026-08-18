@@ -70,4 +70,8 @@ public abstract class Tower {
   protected BlockBrush getPrimaryLight() {
     return theme.getPrimary().getLightBlock();
   }
+
+  protected BlockBrush getSecondaryBars() {
+    return theme.getSecondary().getBars();
+  }
 }

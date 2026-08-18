@@ -166,6 +166,10 @@ public abstract class BaseRoom {
     return primaryTheme().getWall();
   }
 
+  protected BlockBrush primaryBarsBrush() {
+    return primaryTheme().getBars();
+  }
+
   protected BlockBrush secondaryFloorBrush() {
     return secondaryTheme().getFloor();
   }
@@ -188,6 +192,10 @@ public abstract class BaseRoom {
 
   protected BlockBrush secondaryWallBrush() {
     return secondaryTheme().getWall();
+  }
+
+  protected BlockBrush secondaryBarsBrush() {
+    return secondaryTheme().getBars();
   }
 
   protected Random random() {

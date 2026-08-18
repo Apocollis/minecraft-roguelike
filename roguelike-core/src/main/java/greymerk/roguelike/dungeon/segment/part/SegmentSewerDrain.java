@@ -48,7 +48,7 @@ public class SegmentSewerDrain extends SegmentBase {
       cursor.translate(o);
       stair.setUpsideDown(false).setFacing(o.reverse()).stroke(editor, cursor);
       cursor.up();
-      BlockType.IRON_BAR.getBrush().stroke(editor, cursor);
+      getSecondaryBars(theme).stroke(editor, cursor);
       cursor.up();
       stair.setUpsideDown(true).setFacing(o.reverse()).stroke(editor, cursor);
     }

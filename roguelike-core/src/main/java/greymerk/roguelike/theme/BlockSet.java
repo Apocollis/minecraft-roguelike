@@ -22,6 +22,7 @@ public class BlockSet {
   private DoorBlock door = DoorBlock.oak();
   private BlockBrush lightBlock = BlockType.GLOWSTONE.getBrush();
   private BlockBrush liquid = BlockType.WATER_FLOWING.getBrush();
+  private BlockBrush bars = BlockType.IRON_BAR.getBrush();
 
   public BlockSet() {
   }
@@ -35,6 +36,19 @@ public class BlockSet {
       BlockBrush lightBlock,
       BlockBrush liquid
   ) {
+    this(floor, walls, stair, pillar, door, lightBlock, liquid, BlockType.IRON_BAR.getBrush());
+  }
+
+  public BlockSet(
+      BlockBrush floor,
+      BlockBrush walls,
+      StairsBlock stair,
+      BlockBrush pillar,
+      DoorBlock door,
+      BlockBrush lightBlock,
+      BlockBrush liquid,
+      BlockBrush bars
+  ) {
     this.floor = floor;
     this.walls = walls;
     this.stair = stair;
@@ -42,6 +56,7 @@ public class BlockSet {
     this.door = door;
     this.lightBlock = lightBlock;
     this.liquid = liquid;
+    this.bars = bars;
   }
 
   static BlockSet inherit(
@@ -64,7 +79,8 @@ public class BlockSet {
         ofNullable(childBlockSet.getPillar()).orElse(parentBlockSet.getPillar()),
         ofNullable(childBlockSet.getDoor()).orElse(parentBlockSet.getDoor()),
         ofNullable(childBlockSet.getLightBlock()).orElse(parentBlockSet.getLightBlock()),
-        ofNullable(childBlockSet.getLiquid()).orElse(parentBlockSet.getLiquid()));
+        ofNullable(childBlockSet.getLiquid()).orElse(parentBlockSet.getLiquid()),
+        ofNullable(childBlockSet.bars).orElse(parentBlockSet.bars));
   }
 
   public BlockBrush getWall() {
@@ -93,5 +109,9 @@ public class BlockSet {
 
   public BlockBrush getLiquid() {
     return liquid.copy();
+  }
+
+  public BlockBrush getBars() {
+    return ofNullable(bars).orElse(BlockType.IRON_BAR.getBrush()).copy();
   }
 }
