@@ -346,7 +346,9 @@ public class Dungeon {
   }
 
   private boolean hasStructureTooCloseBy(Coord coord, VanillaStructure structure) {
-    int minimumDistanceRequired = RogueConfig.SPAWN_MINIMUM_DISTANCE_FROM_VANILLA_STRUCTURES.getInt();
+    int minimumDistanceRequired = structure == VanillaStructure.VILLAGE
+        ? RogueConfig.SPAWN_MINIMUM_DISTANCE_FROM_VILLAGES.getInt()
+        : RogueConfig.SPAWN_MINIMUM_DISTANCE_FROM_VANILLA_STRUCTURES.getInt();
     if (minimumDistanceRequired <= 0) {
       return false;
     }

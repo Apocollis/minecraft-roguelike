@@ -43,6 +43,7 @@ public class RogueConfig {
   public static final RogueConfig RANDOM = new RogueConfig("random").withValue(false);
   public static final RogueConfig SPAWNBUILTIN = new RogueConfig("doBuiltinSpawn").withValue(true);
   public static final RogueConfig SPAWN_MINIMUM_DISTANCE_FROM_VANILLA_STRUCTURES = new RogueConfig("spawnMinimumDistanceFromVanillaStructures").withValue(50);
+  public static final RogueConfig SPAWN_MINIMUM_DISTANCE_FROM_VILLAGES = new RogueConfig("spawnMinimumDistanceFromVillages").withValue(75);
   public static final RogueConfig UPPERLIMIT = new RogueConfig("upperLimit").withValue(100);
   public static final RogueConfig VANILLA_STRUCTURES_TO_CHECK_MINIMUM_DISTANCE_FROM = new RogueConfig("vanillaStructuresToCheckMinimumDistanceFrom").withValue(VanillaStructure.getAllAsCommaDelimitedString());
   public static final RogueConfig DUNGEONS_GENERATION_THRESHOLD_CHANCE = new RogueConfig("doorwaysChance").withValue(new Double[]{0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10});
@@ -157,6 +158,9 @@ public class RogueConfig {
     }
     if (!configurationMap.containsKey(SPAWN_MINIMUM_DISTANCE_FROM_VANILLA_STRUCTURES.name)) {
       SPAWN_MINIMUM_DISTANCE_FROM_VANILLA_STRUCTURES.setInt(SPAWN_MINIMUM_DISTANCE_FROM_VANILLA_STRUCTURES.intValue);
+    }
+    if (!configurationMap.containsKey(SPAWN_MINIMUM_DISTANCE_FROM_VILLAGES.name)) {
+      SPAWN_MINIMUM_DISTANCE_FROM_VILLAGES.setInt(SPAWN_MINIMUM_DISTANCE_FROM_VILLAGES.intValue);
     }
     if (!configurationMap.containsKey(DUNGEONS_SPAWN_ATTEMPTS.name)) {
       DUNGEONS_SPAWN_ATTEMPTS.setInt(DUNGEONS_SPAWN_ATTEMPTS.intValue);
