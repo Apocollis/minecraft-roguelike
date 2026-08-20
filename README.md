@@ -10,6 +10,8 @@ This is a mod for Minecraft that adds randomly generated dungeon complexes. This
 - `roguelike-core` — version-agnostic dungeon logic
 - `1.12` — Forge 1.12.2 bindings (ships the playable jar)
 
+Development notes (architecture, mixins, config, known fixes): [docs/](docs/README.md).
+
 ### Clone
 
 ```
@@ -30,7 +32,7 @@ Or from `1.12/`:
 gradlew.bat build
 ```
 
-The jar is written to `1.12/build/libs/` (e.g. `RoguelikeDungeons-Arcana-2.5.3.jar`).
+The jar is written to `1.12/build/libs/` (e.g. `RoguelikeDungeons-Arcana-2.5.4.jar`).
 
 A successful `1.12` build also runs `deployToDevbox`, which replaces `RoguelikeDungeons-Arcana-*.jar` in:
 
