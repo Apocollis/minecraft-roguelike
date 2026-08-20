@@ -1,20 +1,23 @@
-# Roguelike Dungeons Arcana — development notes
+# Roguelike Dungeons Arcana — documentation
 
-Reference for continuing work on this fork. Build and clone steps stay in the root [README](../README.md). This folder records **architecture, design choices, known pitfalls, and pack-specific behavior**.
+Build and clone steps: root [README](../README.md).
+
+**Start here for the system:** [architecture.md](architecture.md) — modules, runtime flow, stages, editor layer, structure API, commands, and recorded decisions.
+
+Supporting references:
 
 | Doc | Contents |
 |-----|----------|
-| [architecture.md](architecture.md) | Modules, packages, what not to collapse |
-| [generation.md](generation.md) | Grid spawn, tick-sliced jobs, levels, foundations |
-| [structures-and-commands.md](structures-and-commands.md) | `/locate`, `/whereami`, AABBs, InControl |
-| [themes.md](themes.md) | Theme JSON, `bars` (primary vs secondary) |
-| [config.md](config.md) | `roguelike.cfg` keys that matter for Arcana |
-| [mixins.md](mixins.md) | Mixin rules, SRG names, crashes we hit |
+| [generation.md](generation.md) | Grid math, tick budget, levels, foundations, structure avoidance |
+| [structures-and-commands.md](structures-and-commands.md) | AABBs, `/locate`, `/whereami`, InControl |
+| [themes.md](themes.md) | Theme JSON, `primary.bars` vs `secondary.bars` |
+| [config.md](config.md) | `roguelike.cfg` keys vs Devbox overrides |
+| [mixins.md](mixins.md) | SRG rules, crashes, what not to mixin |
 | [build-and-deploy.md](build-and-deploy.md) | JDK 8, jar name, Devbox deploy |
-| [issues-and-fixes.md](issues-and-fixes.md) | Bugs, causes, what not to repeat |
-| [tweaks-handoff.md](tweaks-handoff.md) | What Arcana Quest Tweaks still owns |
-| [conventions.md](conventions.md) | Permissions, plan-before-code, cleanup policy |
+| [issues-and-fixes.md](issues-and-fixes.md) | Bugs we hit and how they were fixed |
+| [tweaks-handoff.md](tweaks-handoff.md) | Dungeon mixin cleanup in aqtweaks |
+| [conventions.md](conventions.md) | Permissions, plan-before-code, placement |
 
 **Modid:** `roguelike`  
 **Current version:** `2.5.4`  
-**Jar name:** `RoguelikeDungeons-Arcana-2.5.4.jar` (Minecraft version is not in the filename; this fork is 1.12.2 only)
+**Jar name:** `RoguelikeDungeons-Arcana-2.5.4.jar` (1.12.2 only; MC version is not in the filename)

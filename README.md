@@ -10,7 +10,7 @@ This is a mod for Minecraft that adds randomly generated dungeon complexes. This
 - `roguelike-core` — version-agnostic dungeon logic
 - `1.12` — Forge 1.12.2 bindings (ships the playable jar)
 
-Development notes (architecture, mixins, config, known fixes): [docs/](docs/README.md).
+Development notes: [docs/](docs/README.md). Full architecture: [docs/architecture.md](docs/architecture.md).
 
 ### Clone
 
