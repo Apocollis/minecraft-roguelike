@@ -1,7 +1,7 @@
 apply plugin: 'idea'
 apply plugin: 'java'
 
-version = "2.5.3"
+version = "2.5.4"
 group = "com.github.apocollis"
 archivesBaseName = "RoguelikeDungeons-Arcana"
 
