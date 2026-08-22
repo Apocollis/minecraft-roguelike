@@ -29,6 +29,14 @@ public abstract class SegmentBase {
     }
   }
 
+  /**
+   * Place this segment without corridor-wall checks. Used by {@code /roguelike segment}
+   * after a stub hallway has already been carved.
+   */
+  public void generatePreview(WorldEditor editor, DungeonLevel level, Direction dir, Theme theme, Coord pos) {
+    genWall(editor, level, dir, theme, pos);
+  }
+
   protected abstract void genWall(WorldEditor editor, DungeonLevel level, Direction dir, Theme theme, Coord pos);
 
   protected boolean isValidWall(WorldEditor editor, Direction wallDirection, Coord pos) {

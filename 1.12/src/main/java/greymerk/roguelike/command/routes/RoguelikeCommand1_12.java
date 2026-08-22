@@ -2,6 +2,7 @@ package greymerk.roguelike.command.routes;
 
 import com.github.fnar.roguelike.command.CommandContext;
 import com.github.fnar.roguelike.command.routes.RoomCommand1_12;
+import com.github.fnar.roguelike.command.routes.SegmentCommand1_12;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,6 +20,7 @@ public class RoguelikeCommand1_12 extends BaseCommandRoute {
     this.addRoute("give", new GiveCommand1_12());
     this.addRoute("room", new RoomCommand1_12());
     this.addRoute("rooms", new RoomCommand1_12());
+    this.addRoute("segment", new SegmentCommand1_12());
     this.addRoute("settings", new SettingsCommand1_12());
     this.addRoute("tower", new TowerCommand1_12());
   }

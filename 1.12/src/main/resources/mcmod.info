@@ -1,7 +1,7 @@
 [
 {
   "modid" : "roguelike",
-  "name" : "Roguelike Dungeons -- Arcana Edition",
+  "name" : "Roguelike Dungeons: Depths -- Arcana Edition",
   "description" : "Provides a world generator that creates randomized dungeons periodically.",
   "version" : "${version}",
   "mcversion": "${mcversion}",

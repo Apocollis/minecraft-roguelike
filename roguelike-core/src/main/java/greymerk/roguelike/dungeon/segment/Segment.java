@@ -1,6 +1,9 @@
 package greymerk.roguelike.dungeon.segment;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 import greymerk.roguelike.dungeon.segment.part.SegmentAnkh;
 import greymerk.roguelike.dungeon.segment.part.SegmentArch;
@@ -155,5 +158,16 @@ public enum Segment {
   public static Segment getRandom(Random rand) {
     Segment[] values = values();
     return values[rand.nextInt(values.length)];
+  }
+
+  public static Segment fromString(String name) {
+    return valueOf(name.toUpperCase());
+  }
+
+  public static List<String> getSegmentList() {
+    return Arrays.stream(values())
+        .map(Segment::name)
+        .map(String::toLowerCase)
+        .collect(Collectors.toList());
   }
 }

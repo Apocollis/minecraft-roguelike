@@ -27,7 +27,7 @@ import greymerk.roguelike.ItemTooltip;
 import greymerk.roguelike.command.CommandWhereAmI;
 import greymerk.roguelike.dungeon.Dungeon;
 
-@Mod(modid = "roguelike", name = "Roguelike Dungeons -- Arcana Edition", version = Roguelike.version, acceptableRemoteVersions = "*")
+@Mod(modid = "roguelike", name = "Roguelike Dungeons: Depths -- Arcana Edition", version = Roguelike.version, acceptableRemoteVersions = "*")
 public class Roguelike {
 
   public static final Logger LOGGER = LogManager.getLogger(Dungeon.MOD_ID);
