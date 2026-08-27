@@ -4,7 +4,9 @@
 
 **Cause:** First mixins used MCP names and never applied. Tweaks’ `getNearestStructurePos` mixin always returned **null** when `GridStructureTracker.isValidSpawnLocation` failed (it re-runs `canGenerateDungeonHere` on **already built** dungeon terrain).
 
-**Fix:** SRG + `remap = false` + priority 1100 on `ChunkProviderServer`. Locate uses `Dungeon.findNearestGridDungeon` (no terrain re-check).
+**Fix:** SRG + `remap = false` + priority 1100 on `ChunkProviderServer`. Locate originally used `Dungeon.findNearestGridDungeon` (no terrain re-check).
+
+**Later:** Locate reports a **legal grid site** and queues generation if that dungeon is not already placed or queued. Empty unvisited chunks are valid locate targets. Illegal terrain is skipped.
 
 ## `/whereami` → Structure: None in a new dungeon
 

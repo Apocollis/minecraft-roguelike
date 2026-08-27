@@ -158,12 +158,10 @@ public class Dungeon {
   }
 
   /**
-   * Find the nearest grid dungeon chunk position using spiral search over grid
-   * cells, picking the closest dungeon chunk to the player (not merely the
-   * first spiral ring entry).
-   * Used by /roguelike locate and /locate RoguelikeDungeon.
+   * Grid dungeon chunks nearest to the player first. Used by {@code /locate}
+   * to find a legal placement, then queue generation if that site is not built yet.
    */
-  public static int[] findNearestGridDungeon(long seed, int currentChunkX, int currentChunkZ) {
+  public static List<int[]> collectGridDungeonChunks(long seed, int currentChunkX, int currentChunkZ) {
     int maxSpacing = RogueConfig.GRID_MAX_CHUNK_DISTANCE.getInt();
     if (maxSpacing <= 0) maxSpacing = 32;
     int minSpacing = RogueConfig.GRID_MIN_CHUNK_DISTANCE.getInt();
@@ -175,9 +173,7 @@ public class Dungeon {
     int currentGridX = currentChunkX < 0 ? (currentChunkX - maxSpacing + 1) / maxSpacing : currentChunkX / maxSpacing;
     int currentGridZ = currentChunkZ < 0 ? (currentChunkZ - maxSpacing + 1) / maxSpacing : currentChunkZ / maxSpacing;
 
-    int[] best = null;
-    double bestDistSq = Double.MAX_VALUE;
-
+    List<int[]> chunks = new ArrayList<>();
     for (int distance = 0; distance <= 100; distance++) {
       for (int x = -distance; x <= distance; x++) {
         boolean isEdgeX = Math.abs(x) == distance;
@@ -187,37 +183,111 @@ public class Dungeon {
 
           int cellX = currentGridX + x;
           int cellZ = currentGridZ + z;
-
           Random rand = new Random(
               cellX * 341873128712L +
               cellZ * 132897987541L +
               seed +
               RogueConfig.GRID_SEED_OFFSET.getInt()
           );
-
-          int chunkX = cellX * maxSpacing + rand.nextInt(offsetMax);
-          int chunkZ = cellZ * maxSpacing + rand.nextInt(offsetMax);
-
-          double dx = (double) chunkX - currentChunkX;
-          double dz = (double) chunkZ - currentChunkZ;
-          double distSq = dx * dx + dz * dz;
-          if (distSq < bestDistSq) {
-            bestDistSq = distSq;
-            best = new int[]{chunkX, chunkZ};
-          }
-        }
-      }
-
-      // Further rings cannot beat the current best once the ring's minimum
-      // possible chunk distance exceeds the best found so far.
-      if (best != null && distance > 0) {
-        double ringMin = (double) distance * maxSpacing - offsetMax;
-        if (ringMin > 0 && ringMin * ringMin > bestDistSq) {
-          break;
+          chunks.add(new int[]{
+              cellX * maxSpacing + rand.nextInt(offsetMax),
+              cellZ * maxSpacing + rand.nextInt(offsetMax)
+          });
         }
       }
     }
-    return best;
+    chunks.sort((a, b) -> Double.compare(
+        distSq(a[0] - currentChunkX, a[1] - currentChunkZ),
+        distSq(b[0] - currentChunkX, b[1] - currentChunkZ)));
+    return chunks;
+  }
+
+  private static double distSq(int dx, int dz) {
+    return (double) dx * dx + (double) dz * dz;
+  }
+
+  /**
+   * Find the nearest grid dungeon chunk position using spiral search over grid
+   * cells, picking the closest dungeon chunk to the player (not merely the
+   * first spiral ring entry).
+   */
+  public static int[] findNearestGridDungeon(long seed, int currentChunkX, int currentChunkZ) {
+    List<int[]> chunks = collectGridDungeonChunks(seed, currentChunkX, currentChunkZ);
+    return chunks.isEmpty() ? null : chunks.get(0);
+  }
+
+  private static final int LOCATE_MAX_SITE_CHECKS = 16;
+
+  /**
+   * Nearest legal dungeon: an already-placed tower in a grid cell, a queued job,
+   * or the nearest grid site that {@link #canGenerateDungeonHere} accepts.
+   * Unbuilt legal sites are queued so {@code /locate} works before the player visits.
+   */
+  public static Coord locateAndEnsureNearest(
+      WorldEditor editor,
+      Coord from,
+      GenerationEvents events,
+      GenerationPartsEvent parts) {
+    if (editor == null || from == null) {
+      return null;
+    }
+    if (RogueConfig.ENABLE_CLASSIC_GENERATION.getBoolean()) {
+      return editor.findNearestPlacedRoguelikeDungeon(from);
+    }
+
+    generationEvents = events;
+    generationPartsEvents = parts;
+
+    Dungeon dungeon = new Dungeon(editor);
+    int siteChecks = 0;
+    int fromChunkX = from.getX() >> 4;
+    int fromChunkZ = from.getZ() >> 4;
+
+    for (int[] chunk : collectGridDungeonChunks(editor.getSeed(), fromChunkX, fromChunkZ)) {
+      int chunkX = chunk[0];
+      int chunkZ = chunk[1];
+
+      Coord placed = editor.getRoguelikeDungeonInChunk(chunkX, chunkZ);
+      if (placed != null) {
+        return placed;
+      }
+      if (editor.hasQueuedDungeonInChunk(chunkX, chunkZ)) {
+        return chunkCenter(chunkX, chunkZ);
+      }
+      if (siteChecks >= LOCATE_MAX_SITE_CHECKS) {
+        continue;
+      }
+      siteChecks++;
+
+      Coord center = chunkCenter(chunkX, chunkZ);
+      if (!dungeon.canGenerateDungeonHere(center)) {
+        logger.info("Locate skipped illegal dungeon site at chunkX {} chunkZ {}.", chunkX, chunkZ);
+        continue;
+      }
+      if (dungeon.queueIfPossible(center, events, parts)) {
+        return center;
+      }
+    }
+    return editor.findNearestPlacedRoguelikeDungeon(from);
+  }
+
+  private static Coord chunkCenter(int chunkX, int chunkZ) {
+    return new Coord((chunkX << 4) + 8, TOPLEVEL, (chunkZ << 4) + 8);
+  }
+
+  private boolean queueIfPossible(Coord coord, GenerationEvents events, GenerationPartsEvent parts) {
+    generationEvents = events;
+    generationPartsEvents = parts;
+    Optional<DungeonSettings> settings = getDungeonSettingsMaybe(coord);
+    if (!settings.isPresent()) {
+      logger.info("Locate found a grid site at {} but no dungeon settings were valid.", coord);
+      return false;
+    }
+    if (events != null && !events.eventSuggest(settings.get().getId(), coord)) {
+      return false;
+    }
+    timedGenerate(settings.get(), coord);
+    return true;
   }
 
   public static int getLevel(int y) {

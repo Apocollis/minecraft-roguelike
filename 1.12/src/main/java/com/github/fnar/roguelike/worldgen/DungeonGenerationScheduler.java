@@ -15,6 +15,7 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import greymerk.roguelike.dungeon.Dungeon;
 import greymerk.roguelike.dungeon.DungeonBuildJob;
+import greymerk.roguelike.worldgen.Coord;
 
 /**
  * Runs queued {@link DungeonBuildJob}s on the server world tick with a time budget
@@ -33,6 +34,10 @@ public class DungeonGenerationScheduler {
       job.runToCompletion();
       return;
     }
+    if (hasJobInChunk(world, job.getCoord().getX() >> 4, job.getCoord().getZ() >> 4)) {
+      logger.info("Skipping duplicate dungeon generation at {}.", job.getCoord());
+      return;
+    }
     Deque<DungeonBuildJob> queue = jobs.get(world);
     if (queue == null) {
       queue = new ArrayDeque<>();
@@ -40,6 +45,20 @@ public class DungeonGenerationScheduler {
     }
     queue.addLast(job);
     logger.info("Dungeon generation queued ({} pending in this world).", queue.size());
+  }
+
+  public static boolean hasJobInChunk(World world, int chunkX, int chunkZ) {
+    Deque<DungeonBuildJob> queue = jobs.get(world);
+    if (queue == null || queue.isEmpty()) {
+      return false;
+    }
+    for (DungeonBuildJob existing : queue) {
+      Coord coord = existing.getCoord();
+      if ((coord.getX() >> 4) == chunkX && (coord.getZ() >> 4) == chunkZ) {
+        return true;
+      }
+    }
+    return false;
   }
 
   public static void drop(World world) {

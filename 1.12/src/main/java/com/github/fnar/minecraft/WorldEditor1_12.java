@@ -27,6 +27,8 @@ import com.github.fnar.minecraft.item.mapper.PlantMapper1_12;
 import com.github.fnar.minecraft.world.BiomeTag;
 import com.github.fnar.minecraft.world.BiomeTagMapper1_12;
 import com.github.fnar.minecraft.world.BlockPosMapper1_12;
+import com.github.fnar.roguelike.events.StructureGenerationEvent;
+import com.github.fnar.roguelike.events.StructurePartsGenerationEvent;
 import com.github.fnar.roguelike.worldgen.DungeonGenerationScheduler;
 
 import net.minecraft.block.Block;
@@ -64,6 +66,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import greymerk.roguelike.dungeon.Dungeon;
 import greymerk.roguelike.dungeon.DungeonBuildJob;
 import greymerk.roguelike.dungeon.DungeonLevel;
 import greymerk.roguelike.dungeon.RoguelikeDungeonSavedData;
@@ -772,6 +775,42 @@ public class WorldEditor1_12 implements WorldEditor {
 
     RoguelikeDungeonSavedData.get(world).addDungeonBoxes(boxes);
     logger.info("Registered {} Roguelike dungeon structure boxes at {}", boxes.size(), origin);
+  }
+
+  @Override
+  public Coord findNearestPlacedRoguelikeDungeon(Coord from) {
+    if (world == null || world.isRemote || from == null) {
+      return null;
+    }
+    BlockPos nearest = RoguelikeDungeonSavedData.get(world)
+        .findNearestPlacedDungeon(BlockPosMapper1_12.map(from));
+    return nearest == null ? null : BlockPosMapper1_12.map(nearest);
+  }
+
+  @Override
+  public Coord findNearestRoguelikeDungeon(Coord from) {
+    if (world == null || world.isRemote || from == null) {
+      return null;
+    }
+    return Dungeon.locateAndEnsureNearest(
+        this,
+        from,
+        new StructureGenerationEvent(world, getDimension()),
+        new StructurePartsGenerationEvent(world, getDimension()));
+  }
+
+  @Override
+  public Coord getRoguelikeDungeonInChunk(int chunkX, int chunkZ) {
+    if (world == null || world.isRemote) {
+      return null;
+    }
+    BlockPos tower = RoguelikeDungeonSavedData.get(world).findTowerInChunk(chunkX, chunkZ);
+    return tower == null ? null : BlockPosMapper1_12.map(tower);
+  }
+
+  @Override
+  public boolean hasQueuedDungeonInChunk(int chunkX, int chunkZ) {
+    return DungeonGenerationScheduler.hasJobInChunk(world, chunkX, chunkZ);
   }
 
   @Override

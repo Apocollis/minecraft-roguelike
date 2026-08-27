@@ -45,6 +45,48 @@ public class RoguelikeDungeonSavedData extends WorldSavedData {
     markDirty();
   }
 
+  /**
+   * Nearest finished dungeon for {@code /locate}. Prefers tower boxes ({@code level == -1});
+   * falls back to any registered AABB if a dungeon has no tower entry.
+   */
+  public BlockPos findNearestPlacedDungeon(BlockPos from) {
+    if (from == null || dungeons.isEmpty()) {
+      return null;
+    }
+    BlockPos tower = nearestCenter(from, true);
+    return tower != null ? tower : nearestCenter(from, false);
+  }
+
+  private BlockPos nearestCenter(BlockPos from, boolean towersOnly) {
+    DungeonBoundingBox best = null;
+    double bestDistSq = Double.MAX_VALUE;
+    for (DungeonBoundingBox box : dungeons) {
+      if (towersOnly && box.level != -1) {
+        continue;
+      }
+      double dx = box.centerX() - from.getX();
+      double dz = box.centerZ() - from.getZ();
+      double distSq = dx * dx + dz * dz;
+      if (distSq < bestDistSq) {
+        bestDistSq = distSq;
+        best = box;
+      }
+    }
+    return best == null ? null : new BlockPos(best.centerX(), best.centerY(), best.centerZ());
+  }
+
+  public BlockPos findTowerInChunk(int chunkX, int chunkZ) {
+    for (DungeonBoundingBox box : dungeons) {
+      if (box.level != -1) {
+        continue;
+      }
+      if ((box.centerX() >> 4) == chunkX && (box.centerZ() >> 4) == chunkZ) {
+        return new BlockPos(box.centerX(), box.centerY(), box.centerZ());
+      }
+    }
+    return null;
+  }
+
   public boolean isInside(BlockPos pos) {
     return getDungeonLevel(pos) != -2;
   }
@@ -161,6 +203,18 @@ public class RoguelikeDungeonSavedData extends WorldSavedData {
       return x >= minX && x <= maxX
           && y >= minY && y <= maxY
           && z >= minZ && z <= maxZ;
+    }
+
+    public int centerX() {
+      return (minX + maxX) / 2;
+    }
+
+    public int centerY() {
+      return (minY + maxY) / 2;
+    }
+
+    public int centerZ() {
+      return (minZ + maxZ) / 2;
     }
   }
 }

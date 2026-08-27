@@ -22,9 +22,9 @@ Boxes:
 | SRG | MCP | Behavior |
 |-----|-----|----------|
 | `func_193413_a` | `isInsideStructure` | `true` if our boxes contain `pos` (InControl, warp, `/whereami` vanilla path) |
-| `func_180513_a` | `getNearestStructurePos` | nearest **grid** spawn chunk for names containing `roguelike` |
+| `func_180513_a` | `getNearestStructurePos` | nearest **legal** dungeon: placed tower, queued job, or grid site that is queued after `canGenerateDungeonHere` |
 
-`/locate` uses the **grid formula**, not the AABB list. It can point at a cell that has not generated yet.
+`/locate` and `/roguelike locate` walk grid spawn cells nearest-first. If that cell already has a finished tower, they return it. If not, they run the same placement checks as worldgen and **queue generation** so an unvisited chunk still gets a dungeon. Illegal sites (ocean, too close to a village/mineshaft, etc.) are skipped. Duplicate jobs at the same chunk are ignored.
 
 Do **not** mixin `net.minecraft.world.World` in the DEFAULT mixin phase. `World` is already loaded → `MixinTargetAlreadyLoadedException`. Locate must go through `ChunkProviderServer`.
 

@@ -5,9 +5,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import greymerk.roguelike.config.RogueConfig;
-import greymerk.roguelike.dungeon.Dungeon;
+import com.github.fnar.minecraft.WorldEditor1_12;
+import com.github.fnar.minecraft.world.BlockPosMapper1_12;
+
 import greymerk.roguelike.dungeon.RoguelikeDungeonSavedData;
+import greymerk.roguelike.worldgen.Coord;
+import greymerk.roguelike.worldgen.WorldEditor;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.ChunkProviderServer;
@@ -42,13 +45,8 @@ public class MixinChunkProviderServer {
     if (world == null || world.isRemote || pos == null || !RoguelikeDungeonSavedData.isRoguelikeStructureName(name)) {
       return null;
     }
-    if (RogueConfig.ENABLE_CLASSIC_GENERATION.getBoolean()) {
-      return null;
-    }
-    int[] nearest = Dungeon.findNearestGridDungeon(world.getSeed(), pos.getX() >> 4, pos.getZ() >> 4);
-    if (nearest == null) {
-      return null;
-    }
-    return new BlockPos((nearest[0] << 4) + 8, 64, (nearest[1] << 4) + 8);
+    WorldEditor editor = new WorldEditor1_12(world);
+    Coord found = editor.findNearestRoguelikeDungeon(BlockPosMapper1_12.map(pos));
+    return found == null ? null : BlockPosMapper1_12.map(found);
   }
 }

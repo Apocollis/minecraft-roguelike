@@ -53,6 +53,10 @@ public class DungeonBuildJob {
     this.generationPartsEvents = generationPartsEvents;
   }
 
+  public Coord getCoord() {
+    return coord;
+  }
+
   public void runToCompletion() {
     while (tick(30_000_000_000L)) {
       // keep consuming 30s slices until the job is done

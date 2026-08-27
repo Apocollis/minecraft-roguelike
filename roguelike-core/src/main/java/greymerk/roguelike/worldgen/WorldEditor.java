@@ -110,4 +110,25 @@ public interface WorldEditor {
   /** Persist dungeon AABBs for structure queries. No-op unless the editor has a world. */
   default void registerDungeonStructure(Coord origin, List<DungeonLevel> levels) {
   }
+
+  /** Nearest finished dungeon tower, or null if none are registered. */
+  default Coord findNearestPlacedRoguelikeDungeon(Coord from) {
+    return null;
+  }
+
+  /**
+   * Nearest legal dungeon for {@code /locate}: placed tower, queued job, or a
+   * grid site that is queued after a successful placement check.
+   */
+  default Coord findNearestRoguelikeDungeon(Coord from) {
+    return findNearestPlacedRoguelikeDungeon(from);
+  }
+
+  default Coord getRoguelikeDungeonInChunk(int chunkX, int chunkZ) {
+    return null;
+  }
+
+  default boolean hasQueuedDungeonInChunk(int chunkX, int chunkZ) {
+    return false;
+  }
 }

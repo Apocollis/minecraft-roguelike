@@ -201,7 +201,7 @@ flowchart LR
 | Query | Source of truth |
 |-------|-----------------|
 | “Am I inside a dungeon?” | AABBs of a **completed** job |
-| “Where is the nearest dungeon?” | **Grid formula** (`findNearestGridDungeon`), even if ungenerated |
+| “Where is the nearest dungeon?” | Grid cell: placed tower, queued job, or **queue** at first legal `canGenerateDungeonHere` site |
 
 `isInsideStructure("RoguelikeDungeon")` is **not** the whole grid cell.
 
