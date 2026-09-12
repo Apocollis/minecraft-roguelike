@@ -45,4 +45,42 @@ public class BlockSetTest {
     assertThat(barsBrush.getJson()).isEqualTo(bars);
   }
 
+  @Test
+  public void omittedGlassDefaultsToNull() {
+    BlockSet test = BlockSetParser.parseBlockSet(new JsonObject(), new BlockSet());
+    assertThat(test.getGlass()).isNull();
+  }
+
+  @Test
+  public void jsonGlass() {
+    JsonObject json = new JsonObject();
+    JsonObject glass = new JsonObject();
+    glass.addProperty("name", "minecraft:glass");
+    json.add("glass", glass);
+
+    BlockSet test = BlockSetParser.parseBlockSet(json, new BlockSet());
+
+    SingleBlockBrush glassBrush = (SingleBlockBrush) test.getGlass();
+    assertThat(glassBrush.getJson()).isEqualTo(glass);
+  }
+
+  @Test
+  public void omittedCropDefaultsToNull() {
+    BlockSet test = BlockSetParser.parseBlockSet(new JsonObject(), new BlockSet());
+    assertThat(test.getCrop()).isNull();
+  }
+
+  @Test
+  public void jsonCrop() {
+    JsonObject json = new JsonObject();
+    JsonObject crop = new JsonObject();
+    crop.addProperty("name", "minecraft:wheat");
+    json.add("crop", crop);
+
+    BlockSet test = BlockSetParser.parseBlockSet(json, new BlockSet());
+
+    SingleBlockBrush cropBrush = (SingleBlockBrush) test.getCrop();
+    assertThat(cropBrush.getJson()).isEqualTo(crop);
+  }
+
 }

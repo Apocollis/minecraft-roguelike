@@ -23,7 +23,7 @@ public class SegmentSewerArch extends SegmentBase {
     cursor.up(3);
     BlockType.COBBLESTONE_MOSSY.getBrush().stroke(editor, cursor, false, true);
     cursor.up();
-    BlockType.WATER_FLOWING.getBrush().stroke(editor, cursor, false, true);
+    getPrimaryLiquid(theme).stroke(editor, cursor, false, true);
 
     cursor = origin.copy();
     cursor.translate(dir, 2);
@@ -47,7 +47,7 @@ public class SegmentSewerArch extends SegmentBase {
     SingleBlockBrush.AIR.fill(editor, RectSolid.newRect(start, end));
     start.down();
     end.down();
-    BlockType.WATER_FLOWING.getBrush().fill(editor, RectSolid.newRect(start, end));
+    getPrimaryLiquid(theme).fill(editor, RectSolid.newRect(start, end));
 
     for (Direction o : orthogonals) {
       cursor = origin.copy();

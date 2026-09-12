@@ -23,6 +23,8 @@ public class BlockSet {
   private BlockBrush lightBlock = BlockType.GLOWSTONE.getBrush();
   private BlockBrush liquid = BlockType.WATER_FLOWING.getBrush();
   private BlockBrush bars = BlockType.IRON_BAR.getBrush();
+  private BlockBrush glass;
+  private BlockBrush crop;
 
   public BlockSet() {
   }
@@ -49,6 +51,35 @@ public class BlockSet {
       BlockBrush liquid,
       BlockBrush bars
   ) {
+    this(floor, walls, stair, pillar, door, lightBlock, liquid, bars, null);
+  }
+
+  public BlockSet(
+      BlockBrush floor,
+      BlockBrush walls,
+      StairsBlock stair,
+      BlockBrush pillar,
+      DoorBlock door,
+      BlockBrush lightBlock,
+      BlockBrush liquid,
+      BlockBrush bars,
+      BlockBrush glass
+  ) {
+    this(floor, walls, stair, pillar, door, lightBlock, liquid, bars, glass, null);
+  }
+
+  public BlockSet(
+      BlockBrush floor,
+      BlockBrush walls,
+      StairsBlock stair,
+      BlockBrush pillar,
+      DoorBlock door,
+      BlockBrush lightBlock,
+      BlockBrush liquid,
+      BlockBrush bars,
+      BlockBrush glass,
+      BlockBrush crop
+  ) {
     this.floor = floor;
     this.walls = walls;
     this.stair = stair;
@@ -57,6 +88,8 @@ public class BlockSet {
     this.lightBlock = lightBlock;
     this.liquid = liquid;
     this.bars = bars;
+    this.glass = glass;
+    this.crop = crop;
   }
 
   static BlockSet inherit(
@@ -80,7 +113,9 @@ public class BlockSet {
         ofNullable(childBlockSet.getDoor()).orElse(parentBlockSet.getDoor()),
         ofNullable(childBlockSet.getLightBlock()).orElse(parentBlockSet.getLightBlock()),
         ofNullable(childBlockSet.getLiquid()).orElse(parentBlockSet.getLiquid()),
-        ofNullable(childBlockSet.bars).orElse(parentBlockSet.bars));
+        ofNullable(childBlockSet.bars).orElse(parentBlockSet.bars),
+        ofNullable(childBlockSet.getGlass()).orElse(parentBlockSet.getGlass()),
+        ofNullable(childBlockSet.getCrop()).orElse(parentBlockSet.getCrop()));
   }
 
   public BlockBrush getWall() {
@@ -113,5 +148,13 @@ public class BlockSet {
 
   public BlockBrush getBars() {
     return ofNullable(bars).orElse(BlockType.IRON_BAR.getBrush()).copy();
+  }
+
+  public BlockBrush getGlass() {
+    return glass == null ? null : glass.copy();
+  }
+
+  public BlockBrush getCrop() {
+    return crop == null ? null : crop.copy();
   }
 }

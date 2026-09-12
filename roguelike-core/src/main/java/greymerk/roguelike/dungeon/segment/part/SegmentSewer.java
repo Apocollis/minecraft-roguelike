@@ -1,6 +1,5 @@
 package greymerk.roguelike.dungeon.segment.part;
 
-import com.github.fnar.minecraft.block.BlockType;
 import com.github.fnar.minecraft.block.SingleBlockBrush;
 import com.github.fnar.minecraft.block.normal.StairsBlock;
 
@@ -38,6 +37,6 @@ public class SegmentSewer extends SegmentBase {
     SingleBlockBrush.AIR.fill(editor, RectSolid.newRect(start, end));
     start.down();
     end.down();
-    BlockType.WATER_FLOWING.getBrush().fill(editor, RectSolid.newRect(start, end));
+    getPrimaryLiquid(theme).fill(editor, RectSolid.newRect(start, end));
   }
 }

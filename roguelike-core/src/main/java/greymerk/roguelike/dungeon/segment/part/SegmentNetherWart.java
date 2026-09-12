@@ -19,6 +19,10 @@ public class SegmentNetherWart extends SegmentBase {
 
     StairsBlock stair = getSecondaryStairs(theme);
     BlockBrush wall = getSecondaryWall(theme);
+    BlockBrush crop = getPrimaryCrop(theme);
+    if (crop == null) {
+      crop = Crop.NETHER_WART.getBrush();
+    }
 
     Coord cursor = origin.copy();
     cursor.translate(dir, 2);
@@ -47,9 +51,9 @@ public class SegmentNetherWart extends SegmentBase {
       cursor.translate(orthogonals.reverse(), 1);
       wall.stroke(editor, cursor);
       cursor.down(2);
-      Crop.NETHER_WART.getBrush().stroke(editor, cursor);
+      crop.stroke(editor, cursor);
       cursor.translate(orthogonals, 1);
-      Crop.NETHER_WART.getBrush().stroke(editor, cursor);
+      crop.stroke(editor, cursor);
       cursor.down();
       BlockType.SOUL_SAND.getBrush().stroke(editor, cursor);
       cursor.translate(orthogonals.reverse(), 1);

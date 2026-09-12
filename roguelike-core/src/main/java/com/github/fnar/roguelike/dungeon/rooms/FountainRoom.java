@@ -23,7 +23,9 @@ public class FountainRoom extends BaseRoom {
 
   @Override
   protected void generateDecorations(Coord at, List<Direction> entrances) {
-    Fountain.newFountain(worldEditor).generate(at);
+    Fountain.newFountain(worldEditor)
+        .withLiquid(primaryLiquidBrush())
+        .generate(at);
 
     Generatable pillar = Pillar.newPillar(worldEditor).withHeight(getCeilingHeight()).withTheme(theme());
     for (Direction cardinal : Direction.cardinals()) {

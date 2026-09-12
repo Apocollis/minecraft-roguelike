@@ -59,8 +59,12 @@ public class SegmentSpawner extends SegmentBase {
         : level.getSettings().getSpawnerSettings().getSpawners().get(editor.getRandom());
     editor.generateSpawner(spawner, spawnerCoord);
 
+    BlockBrush peek = getPrimaryGlass(theme);
+    if (peek == null) {
+      peek = BlockType.GLASS.getBrush();
+    }
     BlockBrush panelInFrontOfSpawner = rand.nextInt(Math.max(1, level.getSettings().getLevel())) == 0
-        ? BlockType.GLASS.getBrush()
+        ? peek
         : getSecondaryWall(theme);
     panelInFrontOfSpawner.stroke(editor, spawnerCoord.translate(dir.reverse()));
   }

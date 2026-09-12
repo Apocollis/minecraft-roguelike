@@ -2,6 +2,7 @@ package greymerk.roguelike.dungeon.segment.part;
 
 import com.google.common.collect.Lists;
 
+import com.github.fnar.minecraft.block.BlockType;
 import com.github.fnar.minecraft.block.normal.StairsBlock;
 import com.github.fnar.minecraft.block.redstone.DoorBlock;
 import com.github.fnar.util.Pair;
@@ -122,6 +123,28 @@ public abstract class SegmentBase {
 
   protected BlockBrush getSecondaryPillar(Theme theme) {
     return theme.getSecondary().getPillar();
+  }
+
+  protected BlockBrush getPrimaryLiquid(Theme theme) {
+    if (theme != null && theme.getPrimary() != null && theme.getPrimary().getLiquid() != null) {
+      return theme.getPrimary().getLiquid();
+    }
+    return BlockType.WATER_FLOWING.getBrush();
+  }
+
+  protected BlockBrush getSecondaryLiquid(Theme theme) {
+    if (theme != null && theme.getSecondary() != null && theme.getSecondary().getLiquid() != null) {
+      return theme.getSecondary().getLiquid();
+    }
+    return getPrimaryLiquid(theme);
+  }
+
+  protected BlockBrush getPrimaryGlass(Theme theme) {
+    return theme != null && theme.getPrimary() != null ? theme.getPrimary().getGlass() : null;
+  }
+
+  protected BlockBrush getPrimaryCrop(Theme theme) {
+    return theme != null && theme.getPrimary() != null ? theme.getPrimary().getCrop() : null;
   }
 
 }

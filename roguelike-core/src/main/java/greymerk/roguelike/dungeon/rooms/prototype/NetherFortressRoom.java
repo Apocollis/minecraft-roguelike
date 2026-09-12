@@ -102,6 +102,10 @@ public class NetherFortressRoom extends BaseRoom {
   }
 
   private BlockBrush selectCrop() {
+    BlockBrush themeCrop = primaryCropBrush();
+    if (themeCrop != null) {
+      return themeCrop;
+    }
     if (isHotGarden()) {
       return Crop.NETHER_WART.getBrush();
     } else {

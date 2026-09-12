@@ -1,6 +1,5 @@
 package greymerk.roguelike.dungeon.segment.part;
 
-import com.github.fnar.minecraft.block.BlockType;
 import com.github.fnar.minecraft.block.SingleBlockBrush;
 import com.github.fnar.minecraft.block.normal.StairsBlock;
 import com.github.fnar.minecraft.material.Wood;
@@ -24,7 +23,7 @@ public class SegmentSewerDoor extends SegmentBase {
 
     StairsBlock stair = getSecondaryStairs(theme);
     BlockBrush bars = getSecondaryBars(theme);
-    BlockBrush water = BlockType.WATER_FLOWING.getBrush();
+    BlockBrush water = getPrimaryLiquid(theme);
     BlockBrush leaves = Wood.SPRUCE.getLeaves();
     BlockBrush glowstone = getSecondaryLightBlock(theme);
 

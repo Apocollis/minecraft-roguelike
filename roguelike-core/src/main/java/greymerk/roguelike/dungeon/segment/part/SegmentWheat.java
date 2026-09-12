@@ -7,6 +7,7 @@ import com.github.fnar.minecraft.block.normal.StairsBlock;
 
 import greymerk.roguelike.dungeon.DungeonLevel;
 import greymerk.roguelike.theme.Theme;
+import greymerk.roguelike.worldgen.BlockBrush;
 import greymerk.roguelike.worldgen.BlockJumble;
 import greymerk.roguelike.worldgen.Coord;
 import greymerk.roguelike.worldgen.Direction;
@@ -46,11 +47,16 @@ public class SegmentWheat extends SegmentBase {
     BlockType.FARMLAND.getBrush().fill(editor, RectSolid.newRect(start, end));
     start.up(1);
     end.up(1);
-    BlockJumble crops = new BlockJumble();
-    crops.addBlock(Crop.WHEAT.getBrush());
-    crops.addBlock(Crop.CARROTS.getBrush());
-    crops.addBlock(Crop.POTATOES.getBrush());
-    RectSolid.newRect(start, end).fill(editor, crops);
+    BlockBrush themeCrop = getPrimaryCrop(theme);
+    if (themeCrop != null) {
+      RectSolid.newRect(start, end).fill(editor, themeCrop);
+    } else {
+      BlockJumble crops = new BlockJumble();
+      crops.addBlock(Crop.WHEAT.getBrush());
+      crops.addBlock(Crop.CARROTS.getBrush());
+      crops.addBlock(Crop.POTATOES.getBrush());
+      RectSolid.newRect(start, end).fill(editor, crops);
+    }
 
     cursor = origin.copy();
     cursor.translate(dir, 3);

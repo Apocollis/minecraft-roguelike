@@ -263,7 +263,7 @@ public class AvidyaRoom extends BaseRoom {
         cursor.up(1);
         BlockType.COBBLESTONE.getBrush().stroke(worldEditor, cursor);
         cursor.up(3);
-        BlockType.WATER_FLOWING.getBrush().stroke(worldEditor, cursor);
+        primaryLiquidBrush().stroke(worldEditor, cursor);
       }
     }
 

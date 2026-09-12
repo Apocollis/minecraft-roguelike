@@ -75,7 +75,7 @@ public class LabRoom extends BaseRoom {
     BlockBrush stone = BlockType.STONE_BRICKS.getBrush();
     StairsBlock stair = StairsBlock.stoneBrick();
     BlockBrush slab = SlabBlock.stoneBrick();
-    BlockBrush water = BlockType.WATER_FLOWING.getBrush();
+    BlockBrush water = theme.getPrimary().getLiquid();
 
     corner(editor, theme, x, y, z);
 
@@ -115,9 +115,9 @@ public class LabRoom extends BaseRoom {
     stone.stroke(editor, new Coord(x + 1, y, z));
     FlowerPotBlock.flowerPot().withRandomContent(editor.getRandom()).stroke(editor, new Coord(x + 1, y + 1, z));
     farmland.stroke(editor, new Coord(x + 2, y, z));
-    Crop.CARROTS.getBrush().stroke(editor, new Coord(x + 2, y + 1, z));
+    cropOr(theme, Crop.CARROTS.getBrush()).stroke(editor, new Coord(x + 2, y + 1, z));
     farmland.stroke(editor, new Coord(x + 3, y, z));
-    Crop.CARROTS.getBrush().stroke(editor, new Coord(x + 3, y + 1, z));
+    cropOr(theme, Crop.CARROTS.getBrush()).stroke(editor, new Coord(x + 3, y + 1, z));
     stone.stroke(editor, new Coord(x + 4, y, z));
     FlowerPotBlock.flowerPot().withRandomContent(editor.getRandom()).stroke(editor, new Coord(x + 4, y + 1, z));
 
@@ -155,7 +155,7 @@ public class LabRoom extends BaseRoom {
     stone.stroke(editor, new Coord(x + 1, y, z));
     FlowerPotBlock.flowerPot().withRandomContent(editor.getRandom()).stroke(editor, new Coord(x + 1, y + 1, z));
     farmland.stroke(editor, new Coord(x + 2, y, z));
-    Crop.MELON.getBrush().stroke(editor, new Coord(x + 2, y + 1, z));
+    cropOr(theme, Crop.MELON.getBrush()).stroke(editor, new Coord(x + 2, y + 1, z));
     farmland.stroke(editor, new Coord(x + 3, y, z));
     stone.stroke(editor, new Coord(x + 4, y, z));
     FlowerPotBlock.flowerPot().withRandomContent(editor.getRandom()).stroke(editor, new Coord(x + 4, y + 1, z));
@@ -164,7 +164,7 @@ public class LabRoom extends BaseRoom {
     FlowerPotBlock.flowerPot().withRandomContent(editor.getRandom()).stroke(editor, new Coord(x + 5, y + 1, z + 1));
     farmland.stroke(editor, new Coord(x + 5, y, z + 2));
     // todo grow pumpkin stem
-    Crop.PUMPKIN.getBrush().stroke(editor, new Coord(x + 5, y + 1, z + 2));
+    cropOr(theme, Crop.PUMPKIN.getBrush()).stroke(editor, new Coord(x + 5, y + 1, z + 2));
 
     farmland.stroke(editor, new Coord(x + 5, y, z + 3));
     stone.stroke(editor, new Coord(x + 5, y, z + 4));
@@ -182,6 +182,13 @@ public class LabRoom extends BaseRoom {
     lamp.stroke(editor, new Coord(x + 3, y - 1, z + 3));
 
     BlockType.WATER_FLOWING.getBrush().stroke(editor, new Coord(x + 5, y, z));
+  }
+
+  private static BlockBrush cropOr(Theme theme, BlockBrush fallback) {
+    if (theme != null && theme.getPrimary() != null && theme.getPrimary().getCrop() != null) {
+      return theme.getPrimary().getCrop();
+    }
+    return fallback;
   }
 
   private static void pillar(WorldEditor editor, Theme theme, int x, int y, int z) {
