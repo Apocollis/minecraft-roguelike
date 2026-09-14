@@ -262,14 +262,12 @@ public class DungeonsPrison extends BaseRoom {
     }
   }
 
-  private void cell(Coord origin, List<Direction> entrances, boolean occupied) {
+  protected void cell(Coord origin, List<Direction> entrances, boolean occupied) {
     Coord cursor = origin.copy();
     cursor.down();
     if (worldEditor.isAirBlock(cursor)) {
       return;
     }
-
-    BlockBrush bar = secondaryBarsBrush();
 
     Coord start = origin.copy();
     Coord end = origin.copy();
@@ -290,11 +288,21 @@ public class DungeonsPrison extends BaseRoom {
     end.west();
     RectSolid.newRect(start, end).fill(worldEditor, primaryFloorBrush(), false, true);
 
+    fillCellEntrances(origin, entrances);
+
+    if (cellShouldHaveSpawner(occupied)) {
+      generateSpawner(origin, MobType.SKELETON);
+    }
+    decorateCell(origin, entrances);
+  }
+
+  protected void fillCellEntrances(Coord origin, List<Direction> entrances) {
+    BlockBrush bar = secondaryBarsBrush();
     for (Direction dir : entrances) {
-      cursor = origin.copy();
+      Coord cursor = origin.copy();
       cursor.translate(dir, 2);
-      start = cursor.copy();
-      end = cursor.copy();
+      Coord start = cursor.copy();
+      Coord end = cursor.copy();
       start.translate(dir.antiClockwise());
       end.translate(dir.clockwise());
       end.up(2);
@@ -306,10 +314,13 @@ public class DungeonsPrison extends BaseRoom {
         SingleBlockBrush.AIR.stroke(worldEditor, cursor);
       }
     }
+  }
 
-    if (occupied) {
-      generateSpawner(origin, MobType.SKELETON);
-    }
+  protected boolean cellShouldHaveSpawner(boolean occupied) {
+    return occupied;
+  }
+
+  protected void decorateCell(Coord origin, List<Direction> entrances) {
   }
 
 }

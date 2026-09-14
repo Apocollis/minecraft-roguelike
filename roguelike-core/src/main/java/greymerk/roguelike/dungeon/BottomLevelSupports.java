@@ -30,6 +30,11 @@ public final class BottomLevelSupports {
   private static final Logger logger = LogManager.getLogger(MOD_ID);
   /** Wide enough that neighboring 3×3 shafts do not heavily overlap. */
   private static final int GRID_SPACING = 8;
+  /**
+   * Air pockets this tall or shorter are treated as room interior (pits, stairs)
+   * rather than cave. Covers blaze/obsidian (4) and Avidya (5).
+   */
+  private static final int MAX_INTERIOR_GAP = 6;
 
   private BottomLevelSupports() {
   }
@@ -162,24 +167,35 @@ public final class BottomLevelSupports {
   }
 
   /**
-   * Underside of the dungeon floor plate near this XZ: solid with non-opaque
-   * directly below. Searches strictly below the room/tunnel center ({@code levelY}),
-   * never at or above it (avoids ceilings / interior platforms).
+   * Underside of the lowest dungeon floor near this XZ. Searches strictly below
+   * the room/tunnel center ({@code levelY}), never at or above it.
+   * Short gaps ({@link #MAX_INTERIOR_GAP}) are room pits; a larger gap is cave.
    */
   private static Coord findFloorUnderside(WorldEditor editor, int x, int levelY, int z) {
-    // Walkway origin is levelY; default floor is levelY-1. Scan downward only.
     int minY = levelY - Dungeon.VERTICAL_SPACING;
+    Coord lastSolid = null;
+    boolean seenSolid = false;
+    int gap = 0;
     for (int y = levelY - 1; y >= minY; y--) {
       Coord cursor = new Coord(x, y, z);
-      if (!editor.isSolidBlock(cursor)) {
-        continue;
-      }
-      Coord below = cursor.copy().down();
-      if (!editor.isOpaqueCubeBlock(below)) {
-        return cursor;
+      if (editor.isSolidBlock(cursor)) {
+        lastSolid = cursor;
+        seenSolid = true;
+        gap = 0;
+      } else if (seenSolid) {
+        gap++;
+        if (gap > MAX_INTERIOR_GAP) {
+          break;
+        }
       }
     }
-    return null;
+    if (lastSolid == null) {
+      return null;
+    }
+    if (editor.isOpaqueCubeBlock(lastSolid.copy().down())) {
+      return null;
+    }
+    return lastSolid;
   }
 
   private static long pack(int x, int z) {

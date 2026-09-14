@@ -147,4 +147,11 @@ public abstract class SegmentBase {
     return theme != null && theme.getPrimary() != null ? theme.getPrimary().getCrop() : null;
   }
 
+  protected BlockBrush getPrimaryBookshelf(Theme theme) {
+    if (theme != null && theme.getPrimary() != null && theme.getPrimary().getBookshelf() != null) {
+      return theme.getPrimary().getBookshelf();
+    }
+    return BlockType.BOOKSHELF.getBrush();
+  }
+
 }

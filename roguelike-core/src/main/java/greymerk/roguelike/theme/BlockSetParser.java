@@ -28,7 +28,8 @@ class BlockSetParser {
         parseLiquid(json).orElse(baseBlockSet.getLiquid()),
         parseBars(json).orElse(baseBlockSet.getBars()),
         parseGlass(json).orElse(baseBlockSet.getGlass()),
-        parseCrop(json).orElse(baseBlockSet.getCrop())
+        parseCrop(json).orElse(baseBlockSet.getCrop()),
+        parseBookshelf(json).orElse(baseBlockSet.getBookshelf())
     );
   }
 
@@ -99,5 +100,15 @@ class BlockSetParser {
     return json.has("crop")
         ? ofNullable(BlockProvider.create(json.get("crop").getAsJsonObject()))
         : empty();
+  }
+
+  private static Optional<BlockBrush> parseBookshelf(JsonObject json) throws DungeonSettingParseException {
+    if (json.has("bookshelf")) {
+      return ofNullable(BlockProvider.create(json.get("bookshelf").getAsJsonObject()));
+    }
+    if (json.has("bookshelves")) {
+      return ofNullable(BlockProvider.create(json.get("bookshelves").getAsJsonObject()));
+    }
+    return empty();
   }
 }

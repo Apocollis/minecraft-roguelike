@@ -83,4 +83,23 @@ public class BlockSetTest {
     assertThat(cropBrush.getJson()).isEqualTo(crop);
   }
 
+  @Test
+  public void omittedBookshelfDefaultsToVanillaBookshelf() {
+    BlockSet test = BlockSetParser.parseBlockSet(new JsonObject(), new BlockSet());
+    assertThat(test.getBookshelf()).isEqualTo(BlockType.BOOKSHELF.getBrush());
+  }
+
+  @Test
+  public void jsonBookshelf() {
+    JsonObject json = new JsonObject();
+    JsonObject bookshelf = new JsonObject();
+    bookshelf.addProperty("name", "minecraft:planks");
+    json.add("bookshelf", bookshelf);
+
+    BlockSet test = BlockSetParser.parseBlockSet(json, new BlockSet());
+
+    SingleBlockBrush bookshelfBrush = (SingleBlockBrush) test.getBookshelf();
+    assertThat(bookshelfBrush.getJson()).isEqualTo(bookshelf);
+  }
+
 }

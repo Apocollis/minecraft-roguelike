@@ -21,6 +21,7 @@ public enum RoomType {
   BLAZE(true, false),
   BRICK(true, false),
   BTEAM(false, true),
+  BUNKER(true, false),
   CAKE(true, true),
   CORNER(false, false),
   CREEPER(true, false),
@@ -56,6 +57,7 @@ public enum RoomType {
   SMITH(false, true),
   SPIDER(true, false),
   STORAGE(true, false),
+  STUDY(false, true),
   TREETHO(false, false)
   ;
 

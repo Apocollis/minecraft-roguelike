@@ -37,6 +37,7 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Blocks;
+import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.play.server.SPacketChunkData;
@@ -528,10 +529,7 @@ public class WorldEditor1_12 implements WorldEditor {
   @Override
   public void setItem(Coord coord, int slot, RldItemStack itemStack) {
     TileEntity tileEntity = getTileEntity(coord);
-    if (tileEntity == null) {
-      return;
-    }
-    if (!(tileEntity instanceof TileEntityLockableLoot) && !(tileEntity instanceof TileEntityFurnace) && !(tileEntity instanceof TileEntityBrewingStand)) {
+    if (!(tileEntity instanceof IInventory)) {
       return;
     }
     ItemStack forgeItemStack = null;
@@ -543,15 +541,11 @@ public class WorldEditor1_12 implements WorldEditor {
     if (forgeItemStack == null) {
       return;
     }
-    
+
     try {
-      if (tileEntity instanceof TileEntityLockableLoot) {
-        ((TileEntityLockableLoot) tileEntity).setInventorySlotContents(slot, forgeItemStack);
-      } else if (tileEntity instanceof TileEntityFurnace) {
-        ((TileEntityFurnace) tileEntity).setInventorySlotContents(slot, forgeItemStack);
-      } else {
-        ((TileEntityBrewingStand) tileEntity).setInventorySlotContents(slot, forgeItemStack);
-      }
+      IInventory inventory = (IInventory) tileEntity;
+      inventory.setInventorySlotContents(slot, forgeItemStack);
+      tileEntity.markDirty();
     } catch (NullPointerException nullPointerException) {
       logger.error("Could not place item {} at position {}. BlockState at pos: {}.", forgeItemStack, coord, getBlockStateAt(coord));
     }

@@ -212,7 +212,7 @@ public class BlazeRoom extends BaseRoom {
     end.south(4);
     end.west(4);
     end.down(4);
-    RectHollow.newRect(start, end).fill(worldEditor, primaryWallBrush(), false, true);
+    RectHollow.newRect(start, end).fill(worldEditor, primaryWallBrush(), true, true);
 
     generateLiquidPit(at);
 

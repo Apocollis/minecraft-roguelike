@@ -5,11 +5,45 @@ import com.google.gson.JsonParser;
 
 import org.junit.Test;
 
+import greymerk.roguelike.dungeon.base.RoomType;
 import greymerk.roguelike.treasure.loot.ChestType;
+
+import com.github.fnar.roguelike.dungeon.rooms.BunkerRoom;
+import com.github.fnar.roguelike.dungeon.rooms.StudyRoom;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RoomSettingParserTest {
+
+  @Test
+  public void parse_CanParseStudyRoomType() {
+    String roomSettingJson = "{\n" +
+        "  \"type\": \"STUDY\",\n" +
+        "  \"frequency\": \"SECRET\",\n" +
+        "  \"level\": [9]\n" +
+        "}";
+
+    RoomSetting setting = parseRoomSetting(roomSettingJson);
+    assertThat(setting.getRoomType()).isEqualTo(RoomType.STUDY);
+    assertThat(setting.isSecret()).isTrue();
+    assertThat(setting.isOnFloorLevel(9)).isTrue();
+    assertThat(setting.isOnFloorLevel(0)).isFalse();
+    assertThat(setting.instantiate(null, null)).isInstanceOf(StudyRoom.class);
+  }
+
+  @Test
+  public void parse_CanParseBunkerRoomType() {
+    String roomSettingJson = "{\n" +
+        "  \"type\": \"BUNKER\",\n" +
+        "  \"frequency\": \"RANDOM\",\n" +
+        "  \"level\": [2, 3]\n" +
+        "}";
+
+    RoomSetting setting = parseRoomSetting(roomSettingJson);
+    assertThat(setting.getRoomType()).isEqualTo(RoomType.BUNKER);
+    assertThat(setting.isRandom()).isTrue();
+    assertThat(setting.instantiate(null, null)).isInstanceOf(BunkerRoom.class);
+  }
 
   @Test
   public void parse_CanParseTheSpawnerId() {

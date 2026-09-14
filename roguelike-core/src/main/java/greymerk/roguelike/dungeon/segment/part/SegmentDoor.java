@@ -35,7 +35,7 @@ public class SegmentDoor extends SegmentBase {
 
     start.translate(outward, 1);
     end.translate(outward, 1);
-    RectSolid.newRect(start, end).fill(editor, getSecondaryWall(theme), false, true);
+    RectSolid.newRect(start, end).fill(editor, getSecondaryWall(theme), true, true);
 
     cursor.up(2);
     for (Direction d : orthogonal) {

@@ -26,11 +26,11 @@ public class SegmentShelf extends SegmentBase {
     start.translate(orthogonals[0], 1);
     Coord end = cursor.copy();
     end.translate(orthogonals[1], 1);
-    RectSolid.newRect(start, end).fill(editor, getSecondaryWall(theme), false, true);
+    RectSolid.newRect(start, end).fill(editor, getSecondaryWall(theme), true, true);
     start.translate(dir, 1);
     end.translate(dir, 1);
     end.up(2);
-    RectSolid.newRect(start, end).fill(editor, getSecondaryWall(theme), false, true);
+    RectSolid.newRect(start, end).fill(editor, getSecondaryWall(theme), true, true);
     start.translate(dir.reverse(), 1);
     start.up(1);
     end.translate(dir.reverse(), 1);

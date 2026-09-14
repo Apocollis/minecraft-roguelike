@@ -22,7 +22,7 @@ public class SegmentPlant extends SegmentBase {
     SingleBlockBrush.AIR.fill(editor, wall);
 
     wall.translate(dir, 1);
-    getSecondaryWall(theme).fill(editor, wall, false, true);
+    getSecondaryWall(theme).fill(editor, wall, true, true);
 
     cursor.up(2);
     for (Direction d : dir.orthogonals()) {

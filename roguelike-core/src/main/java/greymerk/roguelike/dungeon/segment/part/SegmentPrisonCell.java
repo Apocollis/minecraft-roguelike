@@ -37,7 +37,7 @@ public class SegmentPrisonCell extends SegmentBase {
 
     start.translate(dir, 1);
     end.translate(dir, 1);
-    RectSolid.newRect(start, end).fill(editor, getSecondaryWall(theme), false, true);
+    RectSolid.newRect(start, end).fill(editor, getSecondaryWall(theme), true, true);
 
     cursor.up(2);
     for (Direction d : orthogonal) {

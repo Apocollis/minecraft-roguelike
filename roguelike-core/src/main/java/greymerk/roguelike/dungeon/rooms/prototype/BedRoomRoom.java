@@ -147,7 +147,7 @@ public class BedRoomRoom extends BaseRoom {
 
     // bookshelf with flowerpot atop
     cursor.translate(side, 2);
-    BlockType.BOOKSHELF.getBrush().stroke(worldEditor, cursor);
+    primaryBookshelfBrush().stroke(worldEditor, cursor);
     cursor.up();
     FlowerPotBlock.flowerPot().withRandomContent(random()).stroke(worldEditor, cursor);
 

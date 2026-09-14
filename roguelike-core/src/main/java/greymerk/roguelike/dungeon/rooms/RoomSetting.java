@@ -1,7 +1,9 @@
 package greymerk.roguelike.dungeon.rooms;
 
+import com.github.fnar.roguelike.dungeon.rooms.BunkerRoom;
 import com.github.fnar.roguelike.dungeon.rooms.FountainRoom;
 import com.github.fnar.roguelike.dungeon.rooms.NetherPortalRoom;
+import com.github.fnar.roguelike.dungeon.rooms.StudyRoom;
 import com.github.fnar.roguelike.dungeon.rooms.Platforms2Room;
 import com.github.fnar.roguelike.dungeon.rooms.PlatformsRoom;
 import com.github.fnar.roguelike.dungeon.rooms.SmallLiquidPitRoom;
@@ -106,6 +108,8 @@ public class RoomSetting {
         return new BlazeRoom(this, levelSettings, worldEditor);
       case BTEAM:
         return new BTeamRoom(this, levelSettings, worldEditor);
+      case BUNKER:
+        return new BunkerRoom(this, levelSettings, worldEditor);
       case CAKE:
         return new CakeRoom(this, levelSettings, worldEditor);
       case CORNER:
@@ -176,6 +180,8 @@ public class RoomSetting {
         return new DungeonsSpiderNest(this, levelSettings, worldEditor);
       case STORAGE:
         return new StorageRoom(this, levelSettings, worldEditor);
+      case STUDY:
+        return new StudyRoom(this, levelSettings, worldEditor);
       case TREETHO:
         return new TreethoRoom(this, levelSettings, worldEditor);
     }

@@ -1,6 +1,5 @@
 package greymerk.roguelike.dungeon.segment.part;
 
-import com.github.fnar.minecraft.block.BlockType;
 import com.github.fnar.minecraft.block.SingleBlockBrush;
 import com.github.fnar.minecraft.block.normal.StairsBlock;
 
@@ -32,7 +31,7 @@ public class SegmentBooks extends SegmentBase {
 
     start.translate(outward, 1);
     end.translate(outward, 1);
-    RectSolid.newRect(start, end).fill(editor, getSecondaryWall(theme), false, true);
+    RectSolid.newRect(start, end).fill(editor, getSecondaryWall(theme), true, true);
 
     cursor.up(2);
     for (Direction d : orthogonals) {
@@ -44,8 +43,8 @@ public class SegmentBooks extends SegmentBase {
 
     cursor = origin.copy();
     cursor.translate(outward, 3);
-    BlockType.BOOKSHELF.getBrush().stroke(editor, cursor);
+    getPrimaryBookshelf(theme).stroke(editor, cursor);
     cursor.up();
-    BlockType.BOOKSHELF.getBrush().stroke(editor, cursor);
+    getPrimaryBookshelf(theme).stroke(editor, cursor);
   }
 }

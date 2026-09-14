@@ -136,7 +136,7 @@ public class LibraryRoom extends BaseRoom {
     Coord cursor;
     Coord start;
     Coord end;
-    BlockBrush shelf = BlockType.BOOKSHELF.getBrush();
+    BlockBrush shelf = theme.getPrimary().getBookshelf();
 
     cursor = pos.copy();
     cursor.translate(dir, 5);

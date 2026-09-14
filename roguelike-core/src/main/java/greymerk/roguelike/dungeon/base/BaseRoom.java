@@ -174,6 +174,10 @@ public abstract class BaseRoom {
     return primaryTheme().getCrop();
   }
 
+  protected BlockBrush primaryBookshelfBrush() {
+    return primaryTheme().getBookshelf();
+  }
+
   protected BlockBrush secondaryFloorBrush() {
     return secondaryTheme().getFloor();
   }

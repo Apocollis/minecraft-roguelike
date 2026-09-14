@@ -32,7 +32,7 @@ public class SegmentFirePlace extends SegmentBase {
     // front wall
     start.translate(dir, 1);
     end.translate(dir, 1);
-    RectSolid.newRect(start, end).fill(editor, getPrimaryWalls(theme), false, true);
+    RectSolid.newRect(start, end).fill(editor, getPrimaryWalls(theme), true, true);
 
     // stairs
     cursor.up(2);
