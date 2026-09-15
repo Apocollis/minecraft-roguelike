@@ -20,33 +20,28 @@ public class SegmentAnkh extends SegmentBase {
     StairsBlock stair = getSecondaryStairs(theme);
     BlockBrush customGlass = getPrimaryGlass(theme);
     BlockBrush glass;
-    BlockBrush back;
+    BlockBrush paneBack;
     if (customGlass != null) {
       glass = customGlass;
-      back = getSecondaryWall(theme);
+      paneBack = getSecondaryWall(theme);
     } else {
       DyeColor color = DyeColor.chooseRandom(editor.getRandom());
       glass = ColoredBlock.stainedGlass().setColor(color);
-      back = ColoredBlock.stainedHardenedClay().setColor(color);
+      paneBack = ColoredBlock.stainedHardenedClay().setColor(color);
     }
     BlockBrush light = getSecondaryLightBlock(theme);
-
     Direction[] orthogonals = dir.orthogonals();
 
-    Coord start = pos.copy();
-    start.translate(dir, 2);
-    Coord end = start.copy();
-    end.up(2);
+    fillAlcoveShell(editor, theme, pos, dir, true);
+    Coord wrapStart = pos.copy().translate(dir, 3).translate(dir.left(), 2).down();
+    Coord wrapEnd = pos.copy().translate(dir, 5).translate(dir.right(), 2).up(3);
+    getSecondaryWall(theme).fill(editor, RectSolid.newRect(wrapStart, wrapEnd), true, true);
 
-    SingleBlockBrush.AIR.fill(editor, RectSolid.newRect(start, end));
+    Coord opening = pos.copy().translate(dir, 2);
+    SingleBlockBrush.AIR.fill(editor, RectSolid.newRect(opening, opening.copy().up(2)), false, true);
 
-
-    Coord cursor;
     for (Direction o : orthogonals) {
-
-      cursor = pos.copy();
-      cursor.translate(dir, 2);
-      cursor.translate(o);
+      Coord cursor = pos.copy().translate(dir, 2).translate(o);
       stair.setUpsideDown(false).setFacing(o.reverse()).stroke(editor, cursor);
       cursor.up();
       stair.setUpsideDown(false).setFacing(o.reverse()).stroke(editor, cursor);
@@ -54,20 +49,14 @@ public class SegmentAnkh extends SegmentBase {
       stair.setUpsideDown(true).setFacing(o.reverse()).stroke(editor, cursor);
     }
 
-    start = pos.copy();
-    start.translate(dir, 3);
-    end = start.copy();
-    start.translate(orthogonals[0]);
-    end.translate(orthogonals[1]);
-    end.up(2);
-    RectSolid.newRect(start, end).fill(editor, glass);
-    start.translate(dir);
-    end.translate(dir);
-    RectSolid.newRect(start, end).fill(editor, back);
+    Coord glassStart = pos.copy().translate(dir, 3).translate(orthogonals[0]);
+    Coord glassEnd = pos.copy().translate(dir, 3).translate(orthogonals[1]).up(2);
+    RectSolid.newRect(glassStart, glassEnd).fill(editor, glass, true, true);
+    glassStart.translate(dir);
+    glassEnd.translate(dir);
+    RectSolid.newRect(glassStart, glassEnd).fill(editor, paneBack, true, true);
 
-    cursor = pos.copy();
-    cursor.translate(dir, 3);
-    cursor.down();
+    Coord cursor = pos.copy().translate(dir, 3).down();
     light.stroke(editor, cursor);
     cursor.up(4);
     light.stroke(editor, cursor);

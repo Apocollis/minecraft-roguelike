@@ -1,6 +1,7 @@
 package greymerk.roguelike.dungeon.rooms.prototype;
 
 import com.github.fnar.minecraft.block.BlockType;
+import com.github.fnar.minecraft.block.SingleBlockBrush;
 import com.github.fnar.minecraft.block.spawner.MobType;
 
 import java.util.List;
@@ -11,6 +12,7 @@ import greymerk.roguelike.dungeon.rooms.RoomSetting;
 import greymerk.roguelike.dungeon.settings.LevelSettings;
 import greymerk.roguelike.treasure.TreasureChest;
 import greymerk.roguelike.treasure.loot.ChestType;
+import greymerk.roguelike.worldgen.BlockBrush;
 import greymerk.roguelike.worldgen.Coord;
 import greymerk.roguelike.worldgen.Direction;
 import greymerk.roguelike.worldgen.WorldEditor;
@@ -205,16 +207,7 @@ public class BlazeRoom extends BaseRoom {
       RectSolid.newRect(start, end).fill(worldEditor, primaryStairBrush().setUpsideDown(true).setFacing(dir.reverse()), true, false);
     }
 
-    start = at.copy();
-    end = at.copy();
-    start.north(4);
-    start.east(4);
-    end.south(4);
-    end.west(4);
-    end.down(4);
-    RectHollow.newRect(start, end).fill(worldEditor, primaryWallBrush(), true, true);
-
-    generateLiquidPit(at);
+    generateSealedLiquidTank(at);
 
     cursor = at.copy();
     cursor.up(4);
@@ -233,14 +226,37 @@ public class BlazeRoom extends BaseRoom {
     return this;
   }
 
-  private void generateLiquidPit(Coord origin) {
-    Coord topLeft = origin.copy().translate(-3, -3, -3);
-    Coord bottomRight = origin.copy().translate(3, -2, 3);
-    RectSolid liquidPit = RectSolid.newRect(topLeft, bottomRight);
+  private static final int TANK_RIM = 4;
+  private static final int TANK_INNER = 3;
 
-    primaryLiquidBrush().fill(worldEditor, liquidPit);
+  private void generateSealedLiquidTank(Coord origin) {
+    Coord shellMin = origin.copy().translate(-TANK_RIM, -5, -TANK_RIM);
+    Coord shellMax = origin.copy().translate(TANK_RIM, -1, TANK_RIM);
+    primaryWallBrush().fill(worldEditor, RectSolid.newRect(shellMin, shellMax), true, true);
+
+    Coord innerMin = origin.copy().translate(-TANK_INNER, -3, -TANK_INNER);
+    Coord innerMax = origin.copy().translate(TANK_INNER, -1, TANK_INNER);
+    SingleBlockBrush.AIR.fill(worldEditor, RectSolid.newRect(innerMin, innerMax), false, true);
+
+    Coord liquidMin = origin.copy().translate(-TANK_INNER, -3, -TANK_INNER);
+    Coord liquidMax = origin.copy().translate(TANK_INNER, -2, TANK_INNER);
+    stillBasinLiquid().fill(worldEditor, RectSolid.newRect(liquidMin, liquidMax), true, true);
 
     generateLiquidPitChest(origin);
+  }
+
+  private BlockBrush stillBasinLiquid() {
+    BlockBrush liquid = primaryLiquidBrush();
+    if (liquid instanceof SingleBlockBrush) {
+      BlockType type = ((SingleBlockBrush) liquid).getBlockType();
+      if (type == BlockType.LAVA_FLOWING) {
+        return BlockType.LAVA_STILL.getBrush();
+      }
+      if (type == BlockType.WATER_FLOWING) {
+        return BlockType.WATER_STILL.getBrush();
+      }
+    }
+    return liquid;
   }
 
   private void generateLiquidPitChest(Coord origin) {

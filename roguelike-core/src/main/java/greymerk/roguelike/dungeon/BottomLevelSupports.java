@@ -167,11 +167,15 @@ public final class BottomLevelSupports {
   }
 
   /**
-   * Underside of the lowest dungeon floor near this XZ. Searches strictly below
-   * the room/tunnel center ({@code levelY}), never at or above it.
-   * Short gaps ({@link #MAX_INTERIOR_GAP}) are room pits; a larger gap is cave.
+   * Underside of the walkable floor plate at this XZ. Requires solid at
+   * {@code levelY - 1} so posts never hang from blaze/obsidian pits or liquid.
    */
   private static Coord findFloorUnderside(WorldEditor editor, int x, int levelY, int z) {
+    Coord walkPlate = new Coord(x, levelY - 1, z);
+    if (!editor.isSolidBlock(walkPlate)) {
+      return null;
+    }
+
     int minY = levelY - Dungeon.VERTICAL_SPACING;
     Coord lastSolid = null;
     boolean seenSolid = false;

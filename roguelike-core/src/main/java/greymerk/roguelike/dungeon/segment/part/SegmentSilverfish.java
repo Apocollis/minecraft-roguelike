@@ -9,7 +9,6 @@ import greymerk.roguelike.theme.Theme;
 import greymerk.roguelike.worldgen.Coord;
 import greymerk.roguelike.worldgen.Direction;
 import greymerk.roguelike.worldgen.WorldEditor;
-import greymerk.roguelike.worldgen.shapes.RectSolid;
 
 public class SegmentSilverfish extends SegmentBase {
 
@@ -19,19 +18,8 @@ public class SegmentSilverfish extends SegmentBase {
 
     Direction[] orthogonals = dir.orthogonals();
 
-    Coord cursor = origin.copy();
-    cursor.translate(dir, 2);
-    Coord start = cursor.copy();
-    start.translate(orthogonals[0], 1);
-    Coord end = cursor.copy();
-    end.translate(orthogonals[1], 1);
-    end.up(2);
-    SingleBlockBrush.AIR.fill(editor, RectSolid.newRect(start, end));
-
-    // front wall
-    start.translate(dir, 1);
-    end.translate(dir, 1);
-    RectSolid.newRect(start, end).fill(editor, getPrimaryWalls(theme), true, true);
+    Coord cursor = origin.copy().translate(dir, 2);
+    generateSealedAlcove(editor, theme, origin, dir);
 
     // stairs
     cursor.up(2);
@@ -49,7 +37,7 @@ public class SegmentSilverfish extends SegmentBase {
     stair.setUpsideDown(false).setFacing(dir.reverse());
     stair.stroke(editor, cursor);
     cursor.up();
-    SingleBlockBrush.AIR.stroke(editor, cursor);
+    SingleBlockBrush.AIR.stroke(editor, cursor, false, true);
     cursor.up();
     stair.setUpsideDown(true).setFacing(dir.reverse());
     stair.stroke(editor, cursor);

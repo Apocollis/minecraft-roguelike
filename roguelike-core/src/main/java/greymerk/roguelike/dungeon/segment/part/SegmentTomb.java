@@ -1,7 +1,6 @@
 package greymerk.roguelike.dungeon.segment.part;
 
 import com.github.fnar.minecraft.block.BlockType;
-import com.github.fnar.minecraft.block.SingleBlockBrush;
 import com.github.fnar.minecraft.block.normal.StairsBlock;
 import com.github.fnar.minecraft.block.spawner.MobType;
 import com.github.fnar.minecraft.block.spawner.Spawner;
@@ -18,7 +17,6 @@ import greymerk.roguelike.worldgen.Coord;
 import greymerk.roguelike.worldgen.Direction;
 import greymerk.roguelike.worldgen.WorldEditor;
 import greymerk.roguelike.worldgen.shapes.RectHollow;
-import greymerk.roguelike.worldgen.shapes.RectSolid;
 
 public class SegmentTomb extends SegmentBase {
 
@@ -68,18 +66,8 @@ public class SegmentTomb extends SegmentBase {
 
     Direction[] orthogonals = dir.orthogonals();
 
+    generateSealedAlcove(editor, theme, origin, dir);
     cursor.translate(dir, 2);
-    Coord start = cursor.copy();
-    start.translate(orthogonals[0], 1);
-    Coord end = cursor.copy();
-    end.translate(orthogonals[1], 1);
-    end.up(2);
-    SingleBlockBrush.AIR.fill(editor, RectSolid.newRect(start, end));
-
-    start.translate(dir, 1);
-    end.translate(dir, 1);
-    RectSolid.newRect(start, end).fill(editor, getSecondaryWall(theme), true, true);
-
     cursor.up(2);
     for (Direction d : orthogonals) {
       Coord c = cursor.copy();

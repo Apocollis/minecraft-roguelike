@@ -1,7 +1,6 @@
 package greymerk.roguelike.dungeon.segment.part;
 
 import com.github.fnar.minecraft.block.BlockType;
-import com.github.fnar.minecraft.block.SingleBlockBrush;
 import com.github.fnar.minecraft.block.spawner.MobType;
 import com.github.fnar.minecraft.block.spawner.Spawner;
 
@@ -13,28 +12,13 @@ import greymerk.roguelike.worldgen.BlockBrush;
 import greymerk.roguelike.worldgen.Coord;
 import greymerk.roguelike.worldgen.Direction;
 import greymerk.roguelike.worldgen.WorldEditor;
-import greymerk.roguelike.worldgen.shapes.RectSolid;
 
 public class SegmentSpawner extends SegmentBase {
 
 
   @Override
   protected void genWall(WorldEditor editor, DungeonLevel level, Direction dir, Theme theme, Coord origin) {
-    Direction[] orthogonals = dir.orthogonals();
-
-    Coord start = origin.copy()
-        .translate(dir, 2)
-        .translate(orthogonals[0], 1);
-
-    Coord end = origin.copy()
-        .translate(dir, 2)
-        .translate(orthogonals[1], 1)
-        .up(2);
-
-    SingleBlockBrush.AIR.fill(editor, RectSolid.newRect(start, end))
-        .translate(dir, 1)
-        .fill(editor, getSecondaryWall(theme));
-
+    generateSealedAlcove(editor, theme, origin, dir);
     generateDecorativeArch(editor, dir, origin, theme);
     generateSpawner(editor, editor.getRandom(), level, dir, origin, theme);
   }

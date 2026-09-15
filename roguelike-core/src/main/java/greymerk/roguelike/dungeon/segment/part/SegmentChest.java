@@ -10,7 +10,6 @@ import greymerk.roguelike.treasure.loot.ChestType;
 import greymerk.roguelike.worldgen.Coord;
 import greymerk.roguelike.worldgen.Direction;
 import greymerk.roguelike.worldgen.WorldEditor;
-import greymerk.roguelike.worldgen.shapes.RectSolid;
 
 import static greymerk.roguelike.worldgen.Direction.UP;
 
@@ -21,17 +20,7 @@ public class SegmentChest extends SegmentBase {
     StairsBlock stair = getSecondaryStairs(theme);
 
     Direction[] orthogonals = dir.orthogonals();
-
-    Coord start = origin.copy();
-    start.translate(dir, 2);
-    Coord end = start.copy();
-    start.translate(orthogonals[0], 1);
-    end.translate(orthogonals[1], 1);
-    end.translate(UP, 2);
-    SingleBlockBrush.AIR.fill(editor, RectSolid.newRect(start, end));
-    start.translate(dir, 1);
-    end.translate(dir, 1);
-    RectSolid.newRect(start, end).fill(editor, getSecondaryWall(theme));
+    generateSealedAlcove(editor, theme, origin, dir);
 
     Coord cursor;
     for (Direction d : orthogonals) {
@@ -52,7 +41,7 @@ public class SegmentChest extends SegmentBase {
     cursor = origin.copy();
     cursor.translate(UP, 1);
     cursor.translate(dir, 3);
-    SingleBlockBrush.AIR.stroke(editor, cursor);
+    SingleBlockBrush.AIR.stroke(editor, cursor, false, true);
     cursor.translate(UP, 1);
     stair.setUpsideDown(true).setFacing(dir.reverse());
     stair.stroke(editor, cursor);

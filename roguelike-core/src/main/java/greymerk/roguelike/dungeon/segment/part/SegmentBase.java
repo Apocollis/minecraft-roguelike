@@ -3,6 +3,7 @@ package greymerk.roguelike.dungeon.segment.part;
 import com.google.common.collect.Lists;
 
 import com.github.fnar.minecraft.block.BlockType;
+import com.github.fnar.minecraft.block.SingleBlockBrush;
 import com.github.fnar.minecraft.block.normal.StairsBlock;
 import com.github.fnar.minecraft.block.redstone.DoorBlock;
 import com.github.fnar.util.Pair;
@@ -21,6 +22,7 @@ import greymerk.roguelike.worldgen.BlockBrush;
 import greymerk.roguelike.worldgen.Coord;
 import greymerk.roguelike.worldgen.Direction;
 import greymerk.roguelike.worldgen.WorldEditor;
+import greymerk.roguelike.worldgen.shapes.RectSolid;
 
 public abstract class SegmentBase {
 
@@ -39,6 +41,41 @@ public abstract class SegmentBase {
   }
 
   protected abstract void genWall(WorldEditor editor, DungeonLevel level, Direction dir, Theme theme, Coord pos);
+
+  /**
+   * Wall box behind a 3-wide alcove, including the floor under the niche.
+   * Depth is +2 through +5 so a cave beside or behind the feature is sealed.
+   */
+  protected void fillAlcoveShell(WorldEditor editor, Theme theme, Coord origin, Direction dir, boolean fillAir) {
+    Coord start = origin.copy()
+        .translate(dir, 2)
+        .translate(dir.left())
+        .down();
+    Coord end = origin.copy()
+        .translate(dir, 5)
+        .translate(dir.right())
+        .up(2);
+    getSecondaryWall(theme).fill(editor, RectSolid.newRect(start, end), fillAir, true);
+  }
+
+  /**
+   * Hall-facing 3×3 recess at +2. {@code fillAir=false} so this does not punch
+   * through into a cave after {@link #fillAlcoveShell} has closed it.
+   */
+  protected void carveAlcoveNiche(WorldEditor editor, Coord origin, Direction dir) {
+    Coord start = origin.copy().translate(dir, 2).translate(dir.left());
+    Coord end = origin.copy().translate(dir, 2).translate(dir.right()).up(2);
+    SingleBlockBrush.AIR.fill(editor, RectSolid.newRect(start, end), false, true);
+  }
+
+  /**
+   * Feature alcoves (books, spawners, doors, …): fill cave air with wall, then
+   * cut the niche. Plain {@code WALL} segments must not call this.
+   */
+  protected void generateSealedAlcove(WorldEditor editor, Theme theme, Coord origin, Direction dir) {
+    fillAlcoveShell(editor, theme, origin, dir, true);
+    carveAlcoveNiche(editor, origin, dir);
+  }
 
   protected boolean isValidWall(WorldEditor editor, Direction wallDirection, Coord pos) {
     return isValidNorthWall(wallDirection, editor, pos)

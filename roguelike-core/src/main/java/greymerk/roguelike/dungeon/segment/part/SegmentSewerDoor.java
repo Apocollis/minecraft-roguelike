@@ -1,6 +1,5 @@
 package greymerk.roguelike.dungeon.segment.part;
 
-import com.github.fnar.minecraft.block.SingleBlockBrush;
 import com.github.fnar.minecraft.block.normal.StairsBlock;
 import com.github.fnar.minecraft.material.Wood;
 
@@ -8,7 +7,6 @@ import java.util.Optional;
 
 import greymerk.roguelike.dungeon.DungeonLevel;
 import greymerk.roguelike.dungeon.base.BaseRoom;
-import greymerk.roguelike.dungeon.base.SecretsSetting;
 import greymerk.roguelike.theme.Theme;
 import greymerk.roguelike.worldgen.BlockBrush;
 import greymerk.roguelike.worldgen.Coord;
@@ -57,19 +55,8 @@ public class SegmentSewerDoor extends SegmentBase {
 
     cursor = origin.copy();
     cursor.translate(dir, 2);
-    start = cursor.copy();
-    start.translate(orthogonal[0], 1);
-    end = cursor.copy();
-    end.translate(orthogonal[1], 1);
-    end.up(2);
-    SingleBlockBrush.AIR.fill(editor, RectSolid.newRect(start, end));
-
-    SecretsSetting secrets = level.getSettings().getSecrets();
-    Optional<BaseRoom> room = generateSecret(secrets, editor, level.getSettings(), dir, origin.copy());
-
-    start.translate(dir, 1);
-    end.translate(dir, 1);
-    RectSolid.newRect(start, end).fill(editor, getSecondaryWall(theme), true, true);
+    Optional<BaseRoom> room = generateSecret(level.getSettings().getSecrets(), editor, level.getSettings(), dir, origin.copy());
+    generateSealedAlcove(editor, theme, origin, dir);
 
     cursor.up(2);
     for (Direction d : orthogonal) {

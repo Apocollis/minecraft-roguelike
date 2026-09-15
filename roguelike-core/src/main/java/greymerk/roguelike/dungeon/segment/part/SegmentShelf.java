@@ -21,20 +21,11 @@ public class SegmentShelf extends SegmentBase {
 
     Direction[] orthogonals = dir.orthogonals();
 
-    cursor.translate(dir, 2);
-    Coord start = cursor.copy();
-    start.translate(orthogonals[0], 1);
-    Coord end = cursor.copy();
-    end.translate(orthogonals[1], 1);
-    RectSolid.newRect(start, end).fill(editor, getSecondaryWall(theme), true, true);
-    start.translate(dir, 1);
-    end.translate(dir, 1);
-    end.up(2);
-    RectSolid.newRect(start, end).fill(editor, getSecondaryWall(theme), true, true);
-    start.translate(dir.reverse(), 1);
-    start.up(1);
-    end.translate(dir.reverse(), 1);
+    fillAlcoveShell(editor, theme, origin, dir, true);
+    Coord start = origin.copy().translate(dir, 2).translate(orthogonals[0], 1).up();
+    Coord end = origin.copy().translate(dir, 2).translate(orthogonals[1], 1).up(2);
     RectSolid.newRect(start, end).fill(editor, SingleBlockBrush.AIR, false, true);
+    cursor.translate(dir, 2);
     cursor.up(2);
     for (Direction d : orthogonals) {
       Coord c = cursor.copy();
