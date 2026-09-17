@@ -20,10 +20,13 @@ import greymerk.roguelike.worldgen.Direction;
 import greymerk.roguelike.worldgen.WorldEditor;
 import greymerk.roguelike.worldgen.shapes.RectSolid;
 
-public class NetherPortalRoom extends BaseRoom {
+public class DimensionPortalRoom extends BaseRoom {
 
-  public NetherPortalRoom(RoomSetting roomsSetting, LevelSettings levelSettings, WorldEditor worldEditor) {
+  private final DimensionPortalKind portalKind;
+
+  public DimensionPortalRoom(RoomSetting roomsSetting, LevelSettings levelSettings, WorldEditor worldEditor) {
     super(roomsSetting, levelSettings, worldEditor);
+    this.portalKind = DimensionPortalKind.from(roomsSetting.getRoomType());
     this.wallDist = 9;
     this.ceilingHeight = 7;
     this.depth = 3;
@@ -36,17 +39,22 @@ public class NetherPortalRoom extends BaseRoom {
     Direction front = getEntrance(entrances);
 
     createPathFromEachEntranceToTheCenterOverTheLiquid(at, front);
-    generateNetherPortalWithPlatform(at, front);
+    generatePortalWithPlatform(at, front);
     generateChestInCorner(at, front);
+    portalKind.decorate(worldEditor, at, front, getWallDist(), getCeilingHeight());
 
-    return null;
+    return this;
   }
 
   @Override
   protected void generateFloor(Coord at, List<Direction> entrances) {
     primaryFloorBrush().fill(worldEditor, at.copy().down(2).newRect(4).withHeight(2));
     generateCatwalks(at);
-    theFloorIsLava(at);
+    if (portalKind.usesThemeLiquidPit()) {
+      theFloorIsLava(at);
+    } else {
+      portalKind.fillPit(worldEditor, at, getWallDist(), depth);
+    }
   }
 
   private void generateCatwalks(Coord origin) {
@@ -81,12 +89,11 @@ public class NetherPortalRoom extends BaseRoom {
     ));
   }
 
-  private void generateNetherPortalWithPlatform(Coord origin, Direction front) {
+  private void generatePortalWithPlatform(Coord origin, Direction front) {
     int portalHeight = 7;
     int portalWidth = 5;
     Coord portalBase = origin.copy().down(2);
 
-    // encasing
     primaryPillarBrush().fill(worldEditor, RectSolid.newRect(
         portalBase.copy().translate(front).translate(front.left(), 3),
         portalBase.copy().translate(front.back()).translate(front.right(), 3).up(portalHeight)
@@ -103,10 +110,15 @@ public class NetherPortalRoom extends BaseRoom {
           stairsBrush.stroke(worldEditor, platformStairs.copy().translate(front.right()));
         });
 
-    // nether portal, atop the portal platform
-    new NetherPortal(worldEditor).generate(portalBase, front, portalWidth, portalHeight);
+    new NetherPortal(worldEditor).generate(
+        portalBase,
+        front,
+        portalWidth,
+        portalHeight,
+        portalKind.frameBrush(),
+        portalKind.getRandomPortalsGroupId()
+    );
 
-    // 2x cheeky spawners beneath of portal
     for (Direction orthogonal : front.orthogonals()) {
       generateSpawner(portalBase.copy().translate(orthogonal, 2));
     }

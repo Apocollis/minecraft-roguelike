@@ -2,7 +2,7 @@ package greymerk.roguelike.dungeon.rooms;
 
 import com.github.fnar.roguelike.dungeon.rooms.BunkerRoom;
 import com.github.fnar.roguelike.dungeon.rooms.FountainRoom;
-import com.github.fnar.roguelike.dungeon.rooms.NetherPortalRoom;
+import com.github.fnar.roguelike.dungeon.rooms.DimensionPortalRoom;
 import com.github.fnar.roguelike.dungeon.rooms.StudyRoom;
 import com.github.fnar.roguelike.dungeon.rooms.Platforms2Room;
 import com.github.fnar.roguelike.dungeon.rooms.PlatformsRoom;
@@ -100,8 +100,14 @@ public class RoomSetting {
       default:
       case BRICK:
         return new BrickRoom(this, levelSettings, worldEditor);
+      case AETHER_PORTAL:
+        return new DimensionPortalRoom(this, levelSettings, worldEditor);
+      case ATUM_PORTAL:
+        return new DimensionPortalRoom(this, levelSettings, worldEditor);
       case AVIDYA:
         return new AvidyaRoom(this, levelSettings, worldEditor);
+      case BENEATH_PORTAL:
+        return new DimensionPortalRoom(this, levelSettings, worldEditor);
       case BEDROOM:
         return new BedRoomRoom(this, levelSettings, worldEditor);
       case BLAZE:
@@ -149,7 +155,7 @@ public class RoomSetting {
       case NETHERFORT:
         return new NetherFortressRoom(this, levelSettings, worldEditor);
       case NETHER_PORTAL:
-        return new NetherPortalRoom(this, levelSettings, worldEditor);
+        return new DimensionPortalRoom(this, levelSettings, worldEditor);
       case OBSIDIAN:
         return new ObsidianRoom(this, levelSettings, worldEditor);
       case OSSUARY:
@@ -184,6 +190,8 @@ public class RoomSetting {
         return new StudyRoom(this, levelSettings, worldEditor);
       case TREETHO:
         return new TreethoRoom(this, levelSettings, worldEditor);
+      case TWILIGHT_PORTAL:
+        return new DimensionPortalRoom(this, levelSettings, worldEditor);
     }
   }
 

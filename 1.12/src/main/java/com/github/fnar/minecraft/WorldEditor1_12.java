@@ -653,6 +653,11 @@ public class WorldEditor1_12 implements WorldEditor {
     return modLoader;
   }
 
+  @Override
+  public boolean activateRandomPortal(Coord inner, String randomPortalsGroupId) {
+    return com.github.fnar.minecraft.compat.RandomPortalsActivator1_12.activate(world, inner, randomPortalsGroupId);
+  }
+
   public Biome getBiomeAt(Coord coord) {
     return world.getBiome(BlockPosMapper1_12.map(coord));
   }

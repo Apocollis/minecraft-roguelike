@@ -9,6 +9,7 @@ import greymerk.roguelike.dungeon.base.RoomType;
 import greymerk.roguelike.treasure.loot.ChestType;
 
 import com.github.fnar.roguelike.dungeon.rooms.BunkerRoom;
+import com.github.fnar.roguelike.dungeon.rooms.DimensionPortalRoom;
 import com.github.fnar.roguelike.dungeon.rooms.StudyRoom;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,6 +30,21 @@ public class RoomSettingParserTest {
     assertThat(setting.isOnFloorLevel(9)).isTrue();
     assertThat(setting.isOnFloorLevel(0)).isFalse();
     assertThat(setting.instantiate(null, null)).isInstanceOf(StudyRoom.class);
+  }
+
+  @Test
+  public void parse_CanParseDimensionPortalRoomTypes() {
+    String[] types = {"NETHER_PORTAL", "ATUM_PORTAL", "AETHER_PORTAL", "TWILIGHT_PORTAL", "BENEATH_PORTAL"};
+    for (String type : types) {
+      String roomSettingJson = "{\n" +
+          "  \"type\": \"" + type + "\",\n" +
+          "  \"frequency\": \"SINGLE\"\n" +
+          "}";
+      RoomSetting setting = parseRoomSetting(roomSettingJson);
+      assertThat(setting.getRoomType()).isEqualTo(RoomType.valueOf(type));
+      assertThat(setting.isSingle()).isTrue();
+      assertThat(setting.instantiate(null, null)).isInstanceOf(DimensionPortalRoom.class);
+    }
   }
 
   @Test

@@ -128,6 +128,14 @@ public interface WorldEditor {
     return null;
   }
 
+  /**
+   * Lights a standing RandomPortals frame at {@code inner} for the given pack group id.
+   * Returns true if RandomPortals filled and registered the portal.
+   */
+  default boolean activateRandomPortal(Coord inner, String randomPortalsGroupId) {
+    return false;
+  }
+
   default boolean hasQueuedDungeonInChunk(int chunkX, int chunkZ) {
     return false;
   }

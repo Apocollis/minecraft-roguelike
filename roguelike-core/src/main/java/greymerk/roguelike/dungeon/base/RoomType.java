@@ -16,8 +16,11 @@ import lombok.Getter;
 @Getter
 public enum RoomType {
 
+  AETHER_PORTAL(false, false),
+  ATUM_PORTAL(false, false),
   AVIDYA(false, false),
   BEDROOM(false, true),
+  BENEATH_PORTAL(false, false),
   BLAZE(true, false),
   BRICK(true, false),
   BTEAM(false, true),
@@ -58,7 +61,8 @@ public enum RoomType {
   SPIDER(true, false),
   STORAGE(true, false),
   STUDY(false, true),
-  TREETHO(false, false)
+  TREETHO(false, false),
+  TWILIGHT_PORTAL(false, false)
   ;
 
   private final boolean isIntersection;
