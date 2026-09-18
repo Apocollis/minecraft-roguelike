@@ -114,23 +114,27 @@ public class TreasureChest {
   }
 
   private Direction facingTowardOpenSpace(WorldEditor worldEditor, Coord coord) {
-    List<Direction> towardOpen = Direction.CARDINAL.stream()
-        .filter(dir -> worldEditor.isSolidBlock(coord.add(dir)) && worldEditor.isAirBlock(coord.add(dir.reverse())))
-        .map(Direction::reverse)
-        .collect(Collectors.toList());
-    if (towardOpen.contains(facing)) {
-      return facing;
+    Direction best = facing;
+    int bestSpan = airSpan(worldEditor, coord, facing);
+    for (Direction dir : Direction.CARDINAL) {
+      int span = airSpan(worldEditor, coord, dir);
+      if (span > bestSpan) {
+        bestSpan = span;
+        best = dir;
+      }
     }
-    if (!towardOpen.isEmpty()) {
-      return towardOpen.get(0);
+    return best;
+  }
+
+  private static int airSpan(WorldEditor worldEditor, Coord origin, Direction dir) {
+    int span = 0;
+    for (int i = 1; i <= 6; i++) {
+      if (!worldEditor.isAirBlock(origin.copy().translate(dir, i))) {
+        break;
+      }
+      span++;
     }
-    if (worldEditor.isAirBlock(coord.add(facing))) {
-      return facing;
-    }
-    return Direction.CARDINAL.stream()
-        .filter(dir -> worldEditor.isAirBlock(coord.add(dir)))
-        .findFirst()
-        .orElse(facing);
+    return span;
   }
 
   // TODO: Could this class be a block brush?
@@ -138,8 +142,8 @@ public class TreasureChest {
     if (!isValidChestSpace()) {
       return Optional.empty();
     }
-    // DirectionMapper1_12 inverts cardinals. Visual latch direction is reversed
-    // here so wall chests face the room and open-room chests keep caller facing.
+    // DirectionMapper1_12 inverts cardinals. Face the longest run of air
+    // (alcove → hall/room, not a one-block side gap), then reverse for the mapper.
     Direction front = facingTowardOpenSpace(worldEditor, coord).reverse();
     BlockBrush chestBlock = (isTrapped ? BlockType.TRAPPED_CHEST : BlockType.CHEST).getBrush().setFacing(front);
     if (!chestBlock.stroke(worldEditor, coord)) {

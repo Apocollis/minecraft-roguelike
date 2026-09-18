@@ -24,6 +24,7 @@ import com.github.fnar.minecraft.material.Wood;
 import com.github.fnar.util.ReportThisIssueException;
 
 import net.minecraft.block.BlockChest;
+import net.minecraft.block.BlockLiquid;
 import net.minecraft.block.BlockDirt;
 import net.minecraft.block.BlockDispenser;
 import net.minecraft.block.BlockDropper;
@@ -264,7 +265,7 @@ public class BlockMapper1_12 {
       case LAVA_STILL:
         return Blocks.LAVA.getDefaultState();
       case LAVA_FLOWING:
-        return Blocks.FLOWING_LAVA.getDefaultState();
+        return Blocks.FLOWING_LAVA.getDefaultState().withProperty(BlockLiquid.LEVEL, 8);
       case FIRE:
         return Blocks.FIRE.getDefaultState();
       case IRON_BAR:

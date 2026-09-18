@@ -1,10 +1,13 @@
 package greymerk.roguelike.theme;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import com.github.fnar.minecraft.block.normal.StairsBlock;
 import com.github.fnar.minecraft.block.redstone.DoorBlock;
 
+import java.util.Map;
 import java.util.Optional;
 
 import greymerk.roguelike.dungeon.settings.DungeonSettingParseException;
@@ -80,9 +83,51 @@ class BlockSetParser {
   }
 
   private static Optional<BlockBrush> parseLiquid(JsonObject json) throws DungeonSettingParseException {
-    return json.has("liquid")
-        ? ofNullable(BlockProvider.create(json.get("liquid").getAsJsonObject()))
-        : empty();
+    if (!json.has("liquid")) {
+      return empty();
+    }
+    JsonObject liquid = json.get("liquid").getAsJsonObject();
+    rewriteVanillaLavaToFlowing(liquid);
+    return ofNullable(BlockProvider.create(liquid));
+  }
+
+  /**
+   * Vanilla level-0 lava becomes still on the first liquid tick. Theme liquid
+   * should stay {@code flowing_lava} meta 8 (falling / full). Custom liquids
+   * are left unchanged.
+   */
+  static void rewriteVanillaLavaToFlowing(JsonElement element) {
+    if (element == null || element.isJsonNull()) {
+      return;
+    }
+    if (element.isJsonArray()) {
+      JsonArray array = element.getAsJsonArray();
+      for (JsonElement child : array) {
+        rewriteVanillaLavaToFlowing(child);
+      }
+      return;
+    }
+    if (!element.isJsonObject()) {
+      return;
+    }
+    JsonObject object = element.getAsJsonObject();
+    if (object.has("name") && object.get("name").isJsonPrimitive()) {
+      if (isVanillaLavaBlock(object.get("name").getAsString())) {
+        object.addProperty("name", "minecraft:flowing_lava");
+        object.addProperty("meta", 8);
+      }
+    }
+    for (Map.Entry<String, JsonElement> entry : object.entrySet()) {
+      if ("name".equals(entry.getKey())) {
+        continue;
+      }
+      rewriteVanillaLavaToFlowing(entry.getValue());
+    }
+  }
+
+  private static boolean isVanillaLavaBlock(String name) {
+    String id = name.contains(":") ? name : "minecraft:" + name;
+    return "minecraft:lava".equals(id) || "minecraft:flowing_lava".equals(id);
   }
 
   private static Optional<BlockBrush> parseBars(JsonObject json) throws DungeonSettingParseException {

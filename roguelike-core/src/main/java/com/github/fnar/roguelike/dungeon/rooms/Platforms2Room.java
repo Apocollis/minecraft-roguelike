@@ -92,9 +92,7 @@ public class Platforms2Room extends BaseRoom {
   }
 
   private void fillWithLiquid(Coord at) {
-    if (random().nextDouble() < 0.50) {
-      primaryLiquidBrush().fill(worldEditor, at.newRect(getWallDist()).withHeight(1 + random().nextInt(2)), true, false);
-    }
+    primaryLiquidBrush().fill(worldEditor, at.newRect(getWallDist()).withHeight(1 + random().nextInt(2)), true, false);
   }
 
 }

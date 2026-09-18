@@ -316,7 +316,7 @@ public class DungeonsCrypt extends BaseRoom {
     cursor.translate(dir);
     new TreasureChest(cursor, worldEditor)
         .withChestType(getChestTypeOrUse(ChestType.chooseRandomAmong(random(), ChestType.COMMON_TREASURES)))
-        .withFacing(dir)
+        .withFacing(dir.reverse())
         .withTrap(false)
         .stroke(worldEditor, cursor);
   }

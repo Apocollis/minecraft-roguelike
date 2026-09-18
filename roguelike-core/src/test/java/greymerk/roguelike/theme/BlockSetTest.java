@@ -114,6 +114,34 @@ public class BlockSetTest {
   }
 
   @Test
+  public void jsonLavaLiquidBecomesFlowingMeta8() {
+    JsonObject json = new JsonObject();
+    JsonObject liquid = new JsonObject();
+    liquid.addProperty("name", "minecraft:lava");
+    json.add("liquid", liquid);
+
+    BlockSet test = BlockSetParser.parseBlockSet(json, new BlockSet());
+
+    SingleBlockBrush liquidBrush = (SingleBlockBrush) test.getLiquid();
+    assertThat(liquidBrush.getJson().getAsJsonObject().get("name").getAsString())
+        .isEqualTo("minecraft:flowing_lava");
+    assertThat(liquidBrush.getJson().getAsJsonObject().get("meta").getAsInt()).isEqualTo(8);
+  }
+
+  @Test
+  public void jsonCustomLiquidIsUnchanged() {
+    JsonObject json = new JsonObject();
+    JsonObject liquid = new JsonObject();
+    liquid.addProperty("name", "arcana:mana");
+    json.add("liquid", liquid);
+
+    BlockSet test = BlockSetParser.parseBlockSet(json, new BlockSet());
+
+    SingleBlockBrush liquidBrush = (SingleBlockBrush) test.getLiquid();
+    assertThat(liquidBrush.getJson()).isEqualTo(liquid);
+  }
+
+  @Test
   public void jsonPortalWall() {
     JsonObject json = new JsonObject();
     JsonObject portalWall = new JsonObject();
