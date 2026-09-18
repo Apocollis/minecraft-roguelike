@@ -113,12 +113,35 @@ public class TreasureChest {
     return this.worldEditor.isBlockOfTypeAt(BlockType.CHEST, getCoord().add(dir));
   }
 
+  private Direction facingTowardOpenSpace(WorldEditor worldEditor, Coord coord) {
+    List<Direction> towardOpen = Direction.CARDINAL.stream()
+        .filter(dir -> worldEditor.isSolidBlock(coord.add(dir)) && worldEditor.isAirBlock(coord.add(dir.reverse())))
+        .map(Direction::reverse)
+        .collect(Collectors.toList());
+    if (towardOpen.contains(facing)) {
+      return facing;
+    }
+    if (!towardOpen.isEmpty()) {
+      return towardOpen.get(0);
+    }
+    if (worldEditor.isAirBlock(coord.add(facing))) {
+      return facing;
+    }
+    return Direction.CARDINAL.stream()
+        .filter(dir -> worldEditor.isAirBlock(coord.add(dir)))
+        .findFirst()
+        .orElse(facing);
+  }
+
   // TODO: Could this class be a block brush?
   public Optional<TreasureChest> stroke(WorldEditor worldEditor, Coord coord) {
     if (!isValidChestSpace()) {
       return Optional.empty();
     }
-    BlockBrush chestBlock = (isTrapped ? BlockType.TRAPPED_CHEST : BlockType.CHEST).getBrush().setFacing(facing);
+    // DirectionMapper1_12 inverts cardinals. Visual latch direction is reversed
+    // here so wall chests face the room and open-room chests keep caller facing.
+    Direction front = facingTowardOpenSpace(worldEditor, coord).reverse();
+    BlockBrush chestBlock = (isTrapped ? BlockType.TRAPPED_CHEST : BlockType.CHEST).getBrush().setFacing(front);
     if (!chestBlock.stroke(worldEditor, coord)) {
       return Optional.empty();
     }

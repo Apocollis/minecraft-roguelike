@@ -19,7 +19,7 @@ public class SegmentSilverfish extends SegmentBase {
     Direction[] orthogonals = dir.orthogonals();
 
     Coord cursor = origin.copy().translate(dir, 2);
-    generateSealedAlcove(editor, theme, origin, dir);
+    generateSealedAlcove(editor, level, theme, origin, dir);
 
     // stairs
     cursor.up(2);

@@ -114,6 +114,7 @@ processResources {
 }
 
 jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     manifest {
         attributes([
                 "Specification-Title"        : "roguelike",

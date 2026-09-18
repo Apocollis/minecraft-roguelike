@@ -26,4 +26,18 @@ public interface Bounded {
 
   Coord getEnd();
 
+  default boolean containsCoord(Coord coord) {
+    Coord a = getStart();
+    Coord b = getEnd();
+    int minX = Math.min(a.getX(), b.getX());
+    int maxX = Math.max(a.getX(), b.getX());
+    int minY = Math.min(a.getY(), b.getY());
+    int maxY = Math.max(a.getY(), b.getY());
+    int minZ = Math.min(a.getZ(), b.getZ());
+    int maxZ = Math.max(a.getZ(), b.getZ());
+    return coord.getX() >= minX && coord.getX() <= maxX
+        && coord.getY() >= minY && coord.getY() <= maxY
+        && coord.getZ() >= minZ && coord.getZ() <= maxZ;
+  }
+
 }

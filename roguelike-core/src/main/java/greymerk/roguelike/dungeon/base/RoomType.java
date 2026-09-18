@@ -30,6 +30,7 @@ public enum RoomType {
   CREEPER(true, false),
   CRYPT(true, false),
   DARKHALL(true, false),
+  EMBER_SMELTERY(false, false),
   ENCHANT(false, true),
   ENDER(true, false),
   ENIKO(false, false),
@@ -62,7 +63,8 @@ public enum RoomType {
   STORAGE(true, false),
   STUDY(false, true),
   TREETHO(false, false),
-  TWILIGHT_PORTAL(false, false)
+  TWILIGHT_PORTAL(false, false),
+  WAYSTONE(false, false)
   ;
 
   private final boolean isIntersection;

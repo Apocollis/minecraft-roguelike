@@ -86,6 +86,25 @@ public interface WorldEditor {
 
   void generateWaystone(Coord pos);
 
+  default void generateWaystone(Coord pos, Direction facing) {
+    generateWaystone(pos);
+  }
+
+  default void generateWaystone(Coord pos, String name, Direction facing) {
+    generateWaystone(pos);
+  }
+
+  default String getOrCreateDungeonWaystoneName() {
+    return "";
+  }
+
+  default String getOrCreateDungeonWaystoneName(Coord at) {
+    return getOrCreateDungeonWaystoneName();
+  }
+
+  default void clearDungeonWaystoneName() {
+  }
+
   /**
    * Enter bulk placement: skip per-block lighting/client notify for simple blocks.
    * Must be paired with {@link #endBulkPlacement()}.
@@ -134,6 +153,21 @@ public interface WorldEditor {
    */
   default boolean activateRandomPortal(Coord inner, String randomPortalsGroupId) {
     return false;
+  }
+
+  /**
+   * Writes Embers pipe/pump/emitter connection sides onto an existing tile entity.
+   * Values match Recurrent Complex {@code north,south,east,west,up,down} ints.
+   */
+  default void mergeTileEntityPipeConnections(
+      Coord coord,
+      int north,
+      int south,
+      int east,
+      int west,
+      int up,
+      int down
+  ) {
   }
 
   default boolean hasQueuedDungeonInChunk(int chunkX, int chunkZ) {

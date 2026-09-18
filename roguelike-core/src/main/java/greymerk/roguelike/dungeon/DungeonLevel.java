@@ -129,7 +129,11 @@ public class DungeonLevel {
   }
 
   public boolean containsRoomAt(Coord coord) {
-    return layout.containsRoomAt(coord);
+    return layout != null && layout.containsRoomAt(coord);
+  }
+
+  public boolean containsTunnelAt(Coord coord) {
+    return layout != null && layout.containsTunnelAt(coord);
   }
 
 }

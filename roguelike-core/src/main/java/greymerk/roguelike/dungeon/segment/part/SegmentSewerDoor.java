@@ -12,7 +12,6 @@ import greymerk.roguelike.worldgen.BlockBrush;
 import greymerk.roguelike.worldgen.Coord;
 import greymerk.roguelike.worldgen.Direction;
 import greymerk.roguelike.worldgen.WorldEditor;
-import greymerk.roguelike.worldgen.shapes.RectSolid;
 
 public class SegmentSewerDoor extends SegmentBase {
 
@@ -21,11 +20,12 @@ public class SegmentSewerDoor extends SegmentBase {
 
     StairsBlock stair = getSecondaryStairs(theme);
     BlockBrush bars = getSecondaryBars(theme);
-    BlockBrush water = getPrimaryLiquid(theme);
     BlockBrush leaves = Wood.SPRUCE.getLeaves();
     BlockBrush glowstone = getSecondaryLightBlock(theme);
 
     Direction[] orthogonal = dir.orthogonals();
+
+    generateSealedSewerTrough(editor, level, theme, origin, dir);
 
     Coord cursor = origin.copy();
     cursor.down();
@@ -36,27 +36,22 @@ public class SegmentSewerDoor extends SegmentBase {
     end.translate(orthogonal[1]);
     stair.setUpsideDown(true).setFacing(orthogonal[0]).stroke(editor, start);
     stair.setUpsideDown(true).setFacing(orthogonal[1]).stroke(editor, end);
-    cursor = origin.copy();
-    cursor.down();
     bars.stroke(editor, cursor);
-    start.down();
-    end.down();
-    RectSolid.newRect(start, end).fill(editor, water);
 
     cursor = origin.copy();
     cursor.up(3);
     bars.stroke(editor, cursor);
     cursor.up();
-    leaves.stroke(editor, cursor, false, true);
     cursor.translate(dir);
-    water.stroke(editor, cursor, false, true);
+    generateSealedLiquidPocket(editor, level, theme, cursor);
+    leaves.stroke(editor, cursor.copy().translate(dir.reverse()), false, true);
     cursor.translate(dir);
-    glowstone.stroke(editor, cursor, false, true);
+    glowstone.stroke(editor, cursor, true, true);
 
     cursor = origin.copy();
     cursor.translate(dir, 2);
     Optional<BaseRoom> room = generateSecret(level.getSettings().getSecrets(), editor, level.getSettings(), dir, origin.copy());
-    generateSealedAlcove(editor, theme, origin, dir);
+    generateSealedAlcove(editor, level, theme, origin, dir);
 
     cursor.up(2);
     for (Direction d : orthogonal) {

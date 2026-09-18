@@ -19,6 +19,7 @@ Do not split `/roguelike locate` down to 2. Vanilla `/locate RoguelikeDungeon` i
 - Dungeon/room/theme logic → `roguelike-core` unless it needs Minecraft types.
 - Forge/mappers/mixins → `1.12`.
 - Prefer existing packages over a third tree. New rooms may live next to `prototype` or `com.github.fnar.roguelike.dungeon.rooms`; `RoomSetting` must register them.
+- In-game Recurrent Complex mocks: export `.rcst`, dump with `scripts/rcst_dump.py`, see [rcst-to-room.md](rcst-to-room.md).
 
 ## Mixins
 

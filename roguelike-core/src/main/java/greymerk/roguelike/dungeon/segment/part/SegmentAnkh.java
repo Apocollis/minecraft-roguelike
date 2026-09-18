@@ -32,10 +32,10 @@ public class SegmentAnkh extends SegmentBase {
     BlockBrush light = getSecondaryLightBlock(theme);
     Direction[] orthogonals = dir.orthogonals();
 
-    fillAlcoveShell(editor, theme, pos, dir, true);
+    fillAlcoveShell(editor, level, theme, pos, dir, true);
     Coord wrapStart = pos.copy().translate(dir, 3).translate(dir.left(), 2).down();
     Coord wrapEnd = pos.copy().translate(dir, 5).translate(dir.right(), 2).up(3);
-    getSecondaryWall(theme).fill(editor, RectSolid.newRect(wrapStart, wrapEnd), true, true);
+    fillShell(editor, level, getSecondaryWall(theme), RectSolid.newRect(wrapStart, wrapEnd), true);
 
     Coord opening = pos.copy().translate(dir, 2);
     SingleBlockBrush.AIR.fill(editor, RectSolid.newRect(opening, opening.copy().up(2)), false, true);

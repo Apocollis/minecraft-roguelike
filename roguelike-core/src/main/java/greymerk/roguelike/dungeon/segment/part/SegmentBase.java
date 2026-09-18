@@ -45,8 +45,9 @@ public abstract class SegmentBase {
   /**
    * Wall box behind a 3-wide alcove, including the floor under the niche.
    * Depth is +2 through +5 so a cave beside or behind the feature is sealed.
+   * Skips room interiors and other corridor air so intersections stay open.
    */
-  protected void fillAlcoveShell(WorldEditor editor, Theme theme, Coord origin, Direction dir, boolean fillAir) {
+  protected void fillAlcoveShell(WorldEditor editor, DungeonLevel level, Theme theme, Coord origin, Direction dir, boolean fillAir) {
     Coord start = origin.copy()
         .translate(dir, 2)
         .translate(dir.left())
@@ -55,7 +56,7 @@ public abstract class SegmentBase {
         .translate(dir, 5)
         .translate(dir.right())
         .up(2);
-    getSecondaryWall(theme).fill(editor, RectSolid.newRect(start, end), fillAir, true);
+    fillShell(editor, level, getSecondaryWall(theme), RectSolid.newRect(start, end), fillAir);
   }
 
   /**
@@ -72,9 +73,78 @@ public abstract class SegmentBase {
    * Feature alcoves (books, spawners, doors, …): fill cave air with wall, then
    * cut the niche. Plain {@code WALL} segments must not call this.
    */
-  protected void generateSealedAlcove(WorldEditor editor, Theme theme, Coord origin, Direction dir) {
-    fillAlcoveShell(editor, theme, origin, dir, true);
+  protected void generateSealedAlcove(WorldEditor editor, DungeonLevel level, Theme theme, Coord origin, Direction dir) {
+    fillAlcoveShell(editor, level, theme, origin, dir, true);
     carveAlcoveNiche(editor, origin, dir);
+  }
+
+  /**
+   * Fill walls through cave air, but never into rooms or other hallway air.
+   */
+  protected void fillShell(WorldEditor editor, DungeonLevel level, BlockBrush brush, RectSolid shape, boolean fillCaveAir) {
+    for (Coord c : shape) {
+      if (shouldSkipShellBlock(level, editor, c)) {
+        continue;
+      }
+      brush.stroke(editor, c, fillCaveAir, true);
+    }
+  }
+
+  protected void fillSkippingRooms(WorldEditor editor, DungeonLevel level, BlockBrush brush, RectSolid shape, boolean fillAir, boolean replaceSolid) {
+    for (Coord c : shape) {
+      if (level != null && level.containsRoomAt(c)) {
+        continue;
+      }
+      brush.stroke(editor, c, fillAir, replaceSolid);
+    }
+  }
+
+  private boolean shouldSkipShellBlock(DungeonLevel level, WorldEditor editor, Coord c) {
+    if (level == null) {
+      return false;
+    }
+    if (level.containsRoomAt(c)) {
+      return true;
+    }
+    return editor.isAirBlock(c) && level.containsTunnelAt(c);
+  }
+
+  /**
+   * Floor channel under a sewer hall: wall shell through cave air, theme liquid
+   * in the trough, open at Y-1 so the channel stays visible.
+   */
+  protected void generateSealedSewerTrough(WorldEditor editor, DungeonLevel level, Theme theme, Coord origin, Direction wallDir) {
+    Direction[] along = wallDir.orthogonals();
+    Coord shellStart = origin.copy()
+        .down(3)
+        .translate(along[0], 2)
+        .translate(wallDir);
+    Coord shellEnd = origin.copy()
+        .down(2)
+        .translate(along[1], 2)
+        .translate(wallDir.reverse());
+    fillShell(editor, level, getPrimaryWalls(theme), RectSolid.newRect(shellStart, shellEnd), true);
+
+    Coord liquidStart = origin.copy().down(2).translate(along[0]);
+    Coord liquidEnd = origin.copy().down(2).translate(along[1]);
+    fillSkippingRooms(editor, level, getPrimaryLiquid(theme), RectSolid.newRect(liquidStart, liquidEnd), true, true);
+
+    Coord airStart = origin.copy().down().translate(along[0]);
+    Coord airEnd = origin.copy().down().translate(along[1]);
+    fillSkippingRooms(editor, level, SingleBlockBrush.AIR, RectSolid.newRect(airStart, airEnd), true, true);
+  }
+
+  /**
+   * 3×3×3 wall box around a single liquid block, then theme liquid in the center.
+   */
+  protected void generateSealedLiquidPocket(WorldEditor editor, DungeonLevel level, Theme theme, Coord liquidPos) {
+    if (level != null && level.containsRoomAt(liquidPos)) {
+      return;
+    }
+    Coord shellStart = liquidPos.copy().translate(-1, -1, -1);
+    Coord shellEnd = liquidPos.copy().translate(1, 1, 1);
+    fillShell(editor, level, getPrimaryWalls(theme), RectSolid.newRect(shellStart, shellEnd), true);
+    getPrimaryLiquid(theme).stroke(editor, liquidPos, true, true);
   }
 
   protected boolean isValidWall(WorldEditor editor, Direction wallDirection, Coord pos) {

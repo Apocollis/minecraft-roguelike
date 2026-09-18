@@ -66,7 +66,7 @@ public class SegmentTomb extends SegmentBase {
 
     Direction[] orthogonals = dir.orthogonals();
 
-    generateSealedAlcove(editor, theme, origin, dir);
+    generateSealedAlcove(editor, level, theme, origin, dir);
     cursor.translate(dir, 2);
     cursor.up(2);
     for (Direction d : orthogonals) {

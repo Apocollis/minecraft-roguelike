@@ -76,6 +76,7 @@ public enum Segment {
   SQUAREARCH,
   TOMB,
   WALL,
+  WAYSTONE,
   WHEAT;
 
   public static SegmentBase getSegment(Segment choice) {
@@ -147,6 +148,8 @@ public enum Segment {
         return new SegmentPrisonCell();
       case WALL:
         return new SegmentWall();
+      case WAYSTONE:
+        return new SegmentDoor();
       case PLANT:
         return new SegmentPlant();
     }

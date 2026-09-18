@@ -181,7 +181,7 @@ public class RewardRoom extends BaseRoom {
 
     cursor = at.copy();
     cursor.up();
-    Direction chestFacing = getEntrance(entrances).reverse();
+    Direction chestFacing = getEntrance(entrances);
     new TreasureChest(cursor, worldEditor)
         .withChestType(getChestTypeOrUse(getChestTypeOrUse(ChestType.REWARD)))
         .withFacing(chestFacing)

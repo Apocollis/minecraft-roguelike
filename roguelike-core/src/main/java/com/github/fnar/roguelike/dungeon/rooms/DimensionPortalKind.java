@@ -11,7 +11,6 @@ import greymerk.roguelike.worldgen.BlockBrush;
 import greymerk.roguelike.worldgen.Coord;
 import greymerk.roguelike.worldgen.Direction;
 import greymerk.roguelike.worldgen.WorldEditor;
-import greymerk.roguelike.worldgen.shapes.RectSolid;
 
 public enum DimensionPortalKind {
 
@@ -61,33 +60,6 @@ public enum DimensionPortalKind {
     }
   }
 
-  public void fillPit(WorldEditor worldEditor, Coord origin, int wallDist, int depth) {
-    RectSolid pit = RectSolid.newRect(
-        origin.copy().north(wallDist).west(wallDist).down(),
-        origin.copy().south(wallDist).east(wallDist).down(depth)
-    );
-    switch (this) {
-      case ATUM:
-        BlockType.SAND.getBrush().fill(worldEditor, pit, true, false);
-        break;
-      case AETHER:
-        SingleBlockBrush.AIR.fill(worldEditor, pit, true, false);
-        break;
-      case TWILIGHT:
-        BlockType.DIRT.getBrush().fill(worldEditor, pit, true, false);
-        break;
-      case BENEATH:
-        BlockType.MAGMA.getBrush().fill(worldEditor, pit, true, false);
-        break;
-      default:
-        break;
-    }
-  }
-
-  public boolean usesThemeLiquidPit() {
-    return this == NETHER;
-  }
-
   public void decorate(WorldEditor worldEditor, Coord origin, Direction front, int wallDist, int ceilingHeight) {
     switch (this) {
       case AETHER:
@@ -99,7 +71,6 @@ public enum DimensionPortalKind {
           vines.stroke(worldEditor, origin.copy().translate(cardinal, wallDist - 1).up(2));
           vines.stroke(worldEditor, origin.copy().translate(cardinal, wallDist - 1).translate(cardinal.left(), 3).up(3));
         }
-        BlockType.GRASS_BLOCK.getBrush().stroke(worldEditor, origin.copy().down());
         break;
       case BENEATH:
         BlockType.STONE_BRICK_CHISELED.getBrush().stroke(worldEditor, origin.copy().translate(front, 3).up(ceilingHeight - 1));

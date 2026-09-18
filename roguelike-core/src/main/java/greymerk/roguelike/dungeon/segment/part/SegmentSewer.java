@@ -1,6 +1,5 @@
 package greymerk.roguelike.dungeon.segment.part;
 
-import com.github.fnar.minecraft.block.SingleBlockBrush;
 import com.github.fnar.minecraft.block.normal.StairsBlock;
 
 import greymerk.roguelike.dungeon.DungeonLevel;
@@ -29,14 +28,6 @@ public class SegmentSewer extends SegmentBase {
     stair.setUpsideDown(true).setFacing(dir.reverse());
     stair.fill(editor, RectSolid.newRect(start, end));
 
-    start = origin.copy();
-    start.down();
-    end = start.copy();
-    start.translate(orthogonals[0]);
-    end.translate(orthogonals[1]);
-    SingleBlockBrush.AIR.fill(editor, RectSolid.newRect(start, end));
-    start.down();
-    end.down();
-    getPrimaryLiquid(theme).fill(editor, RectSolid.newRect(start, end));
+    generateSealedSewerTrough(editor, level, theme, origin, dir);
   }
 }

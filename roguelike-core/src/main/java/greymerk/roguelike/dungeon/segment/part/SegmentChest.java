@@ -20,7 +20,7 @@ public class SegmentChest extends SegmentBase {
     StairsBlock stair = getSecondaryStairs(theme);
 
     Direction[] orthogonals = dir.orthogonals();
-    generateSealedAlcove(editor, theme, origin, dir);
+    generateSealedAlcove(editor, dungeonLevel, theme, origin, dir);
 
     Coord cursor;
     for (Direction d : orthogonals) {
@@ -57,7 +57,7 @@ public class SegmentChest extends SegmentBase {
 
     new TreasureChest(shelf, editor)
         .withChestType(ChestType.chooseRandomAmong(editor.getRandom(), ChestType.COMMON_TREASURES))
-        .withFacing(dir)
+        .withFacing(dir.reverse())
         .withTrap(TreasureChest.shouldBeTrapped(editor.getRandom(), dungeonLevel.getSettings().getLevel()))
         .stroke(editor, shelf);
   }

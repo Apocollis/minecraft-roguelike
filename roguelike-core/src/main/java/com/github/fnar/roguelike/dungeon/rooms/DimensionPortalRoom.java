@@ -5,7 +5,6 @@ import com.google.common.collect.Lists;
 import com.github.fnar.minecraft.block.SingleBlockBrush;
 import com.github.fnar.minecraft.block.normal.StairsBlock;
 import com.github.fnar.roguelike.worldgen.generatables.NetherPortal;
-import com.github.fnar.roguelike.worldgen.generatables.Pillar;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -15,6 +14,7 @@ import greymerk.roguelike.dungeon.rooms.RoomSetting;
 import greymerk.roguelike.dungeon.settings.LevelSettings;
 import greymerk.roguelike.treasure.TreasureChest;
 import greymerk.roguelike.treasure.loot.ChestType;
+import greymerk.roguelike.worldgen.BlockBrush;
 import greymerk.roguelike.worldgen.Coord;
 import greymerk.roguelike.worldgen.Direction;
 import greymerk.roguelike.worldgen.WorldEditor;
@@ -40,6 +40,7 @@ public class DimensionPortalRoom extends BaseRoom {
 
     createPathFromEachEntranceToTheCenterOverTheLiquid(at, front);
     generatePortalWithPlatform(at, front);
+    generateEntranceSpawners(at, entrances);
     generateChestInCorner(at, front);
     portalKind.decorate(worldEditor, at, front, getWallDist(), getCeilingHeight());
 
@@ -50,11 +51,19 @@ public class DimensionPortalRoom extends BaseRoom {
   protected void generateFloor(Coord at, List<Direction> entrances) {
     primaryFloorBrush().fill(worldEditor, at.copy().down(2).newRect(4).withHeight(2));
     generateCatwalks(at);
-    if (portalKind.usesThemeLiquidPit()) {
-      theFloorIsLava(at);
-    } else {
-      portalKind.fillPit(worldEditor, at, getWallDist(), depth);
-    }
+    generateMoatTank(at);
+  }
+
+  private void generateMoatTank(Coord origin) {
+    int wallDist = getWallDist();
+    primaryFloorBrush().fill(worldEditor, RectSolid.newRect(
+        origin.copy().north(wallDist).west(wallDist).down(depth),
+        origin.copy().south(wallDist).east(wallDist).down(depth)
+    ));
+    primaryLiquidBrush().fill(worldEditor, RectSolid.newRect(
+        origin.copy().north(wallDist).west(wallDist).down(),
+        origin.copy().south(wallDist).east(wallDist).down(2)
+    ), true, false);
   }
 
   private void generateCatwalks(Coord origin) {
@@ -94,7 +103,7 @@ public class DimensionPortalRoom extends BaseRoom {
     int portalWidth = 5;
     Coord portalBase = origin.copy().down(2);
 
-    primaryPillarBrush().fill(worldEditor, RectSolid.newRect(
+    primaryPortalWallBrush().fill(worldEditor, RectSolid.newRect(
         portalBase.copy().translate(front).translate(front.left(), 3),
         portalBase.copy().translate(front.back()).translate(front.right(), 3).up(portalHeight)
     ));
@@ -110,6 +119,9 @@ public class DimensionPortalRoom extends BaseRoom {
           stairsBrush.stroke(worldEditor, platformStairs.copy().translate(front.right()));
         });
 
+    generatePortalPlatformLights(portalBase, front);
+    generatePortalCeilingLights(origin, front);
+
     new NetherPortal(worldEditor).generate(
         portalBase,
         front,
@@ -118,9 +130,32 @@ public class DimensionPortalRoom extends BaseRoom {
         portalKind.frameBrush(),
         portalKind.getRandomPortalsGroupId()
     );
+  }
 
-    for (Direction orthogonal : front.orthogonals()) {
-      generateSpawner(portalBase.copy().translate(orthogonal, 2));
+  private void generatePortalCeilingLights(Coord origin, Direction front) {
+    BlockBrush light = primaryLightBrush();
+    Stream.of(front, front.reverse()).forEach(facing ->
+        light.stroke(worldEditor, origin.copy().translate(facing, 4).up(getCeilingHeight())));
+  }
+
+  private void generatePortalPlatformLights(Coord portalBase, Direction front) {
+    BlockBrush light = primaryLightBrush();
+    Stream.of(front, front.reverse()).forEach(side -> {
+      for (Direction ortho : front.orthogonals()) {
+        light.stroke(worldEditor, portalBase.copy().up().translate(side, 2).translate(ortho, 3));
+      }
+    });
+  }
+
+  private void generateEntranceSpawners(Coord origin, List<Direction> entrances) {
+    int wallDist = getWallDist();
+    for (Direction entrance : entrances) {
+      for (Direction side : entrance.orthogonals()) {
+        generateSpawner(origin.copy()
+            .translate(entrance, wallDist)
+            .translate(side, 4)
+            .up(2));
+      }
     }
   }
 
@@ -134,11 +169,16 @@ public class DimensionPortalRoom extends BaseRoom {
       pillarCoords.add(at.copy().translate(r, 3).translate(c, 8));
       pillarCoords.add(at.copy().translate(l, 8).translate(c, 8));
     }
-    Pillar pillar = Pillar.newPillar(worldEditor)
-        .withHeight(getCeilingHeight())
-        .withStairs(primaryStairBrush())
-        .withPillar(secondaryPillarBrush());
-    pillarCoords.forEach(pillar::generate);
+    BlockBrush pillarBrush = secondaryPillarBrush();
+    StairsBlock cap = primaryStairBrush();
+    int topOffset = getCeilingHeight() - 1;
+    for (Coord pillarCoord : pillarCoords) {
+      Coord top = pillarCoord.copy().up(topOffset);
+      RectSolid.newRect(pillarCoord.copy().down(), top).fill(worldEditor, pillarBrush, true, false);
+      for (Direction cardinal : Direction.CARDINAL) {
+        cap.setUpsideDown(true).setFacing(cardinal).stroke(worldEditor, top.copy().translate(cardinal), true, false);
+      }
+    }
   }
 
   private void generateChestInCorner(Coord origin, Direction front) {

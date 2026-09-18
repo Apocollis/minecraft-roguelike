@@ -18,7 +18,7 @@ public class SegmentSpawner extends SegmentBase {
 
   @Override
   protected void genWall(WorldEditor editor, DungeonLevel level, Direction dir, Theme theme, Coord origin) {
-    generateSealedAlcove(editor, theme, origin, dir);
+    generateSealedAlcove(editor, level, theme, origin, dir);
     generateDecorativeArch(editor, dir, origin, theme);
     generateSpawner(editor, editor.getRandom(), level, dir, origin, theme);
   }

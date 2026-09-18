@@ -117,7 +117,9 @@ public class SegmentTrap extends SegmentBase {
 
     Random random = editor.getRandom();
     Direction towardsCenter = outward.reverse();
-    BlockType.DISPENSER.getBrush().setFacing(towardsCenter).stroke(editor, dispenser);
+    // DirectionMapper1_12 inverts cardinal FACING. Pass outward so the
+    // dispenser fires towards the hall after that flip.
+    BlockType.DISPENSER.getBrush().setFacing(outward).stroke(editor, dispenser);
 
     for (int i = 0; i < 5; i++) {
       int slot = random.nextInt(9);

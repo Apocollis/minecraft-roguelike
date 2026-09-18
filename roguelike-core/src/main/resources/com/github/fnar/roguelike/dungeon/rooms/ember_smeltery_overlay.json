@@ -1,0 +1,1558 @@
+{
+  "blocks": [
+    {
+      "name": "cathedral:dwemer_light_normal",
+      "meta": 0,
+      "dx": -4,
+      "dy": -1,
+      "dz": -4
+    },
+    {
+      "name": "cathedral:dwemer_light_normal",
+      "meta": 0,
+      "dx": 4,
+      "dy": -1,
+      "dz": -4
+    },
+    {
+      "name": "cathedral:dwemer_light_normal",
+      "meta": 0,
+      "dx": -4,
+      "dy": -1,
+      "dz": 4
+    },
+    {
+      "name": "cathedral:dwemer_light_normal",
+      "meta": 0,
+      "dx": 4,
+      "dy": -1,
+      "dz": 4
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 0,
+      "dx": -2,
+      "dy": 0,
+      "dz": -5
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 2,
+      "dx": -1,
+      "dy": 0,
+      "dz": -5
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 2,
+      "dx": 0,
+      "dy": 0,
+      "dz": -5
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 2,
+      "dx": 1,
+      "dy": 0,
+      "dz": -5
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 1,
+      "dx": 2,
+      "dy": 0,
+      "dz": -5
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 0,
+      "dx": -2,
+      "dy": 0,
+      "dz": -4
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": -1,
+      "dy": 0,
+      "dz": -4
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 0,
+      "dy": 0,
+      "dz": -4
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 1,
+      "dy": 0,
+      "dz": -4
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 1,
+      "dx": 2,
+      "dy": 0,
+      "dz": -4
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": -1,
+      "dy": 0,
+      "dz": -3
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 0,
+      "dy": 0,
+      "dz": -3
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 1,
+      "dy": 0,
+      "dz": -3
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 2,
+      "dx": -5,
+      "dy": 0,
+      "dz": -2
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 2,
+      "dx": -4,
+      "dy": 0,
+      "dz": -2
+    },
+    {
+      "name": "cathedral:dwemer_block_carved",
+      "meta": 5,
+      "dx": -2,
+      "dy": 0,
+      "dz": -2
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": -1,
+      "dy": 0,
+      "dz": -2
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 0,
+      "dy": 0,
+      "dz": -2
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 1,
+      "dy": 0,
+      "dz": -2
+    },
+    {
+      "name": "cathedral:dwemer_block_carved",
+      "meta": 5,
+      "dx": 2,
+      "dy": 0,
+      "dz": -2
+    },
+    {
+      "name": "embers:pipe",
+      "meta": 0,
+      "dx": 3,
+      "dy": 0,
+      "dz": -2
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 2,
+      "dx": 4,
+      "dy": 0,
+      "dz": -2
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 2,
+      "dx": 5,
+      "dy": 0,
+      "dz": -2
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 0,
+      "dx": -5,
+      "dy": 0,
+      "dz": -1
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": -4,
+      "dy": 0,
+      "dz": -1
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": -3,
+      "dy": 0,
+      "dz": -1
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": -2,
+      "dy": 0,
+      "dz": -1
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": -1,
+      "dy": 0,
+      "dz": -1
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 0,
+      "dy": 0,
+      "dz": -1
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 1,
+      "dy": 0,
+      "dz": -1
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 2,
+      "dy": 0,
+      "dz": -1
+    },
+    {
+      "name": "embers:pipe",
+      "meta": 0,
+      "dx": 3,
+      "dy": 0,
+      "dz": -1
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 4,
+      "dy": 0,
+      "dz": -1
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 1,
+      "dx": 5,
+      "dy": 0,
+      "dz": -1
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 0,
+      "dx": -5,
+      "dy": 0,
+      "dz": 0
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": -4,
+      "dy": 0,
+      "dz": 0
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": -3,
+      "dy": 0,
+      "dz": 0
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": -2,
+      "dy": 0,
+      "dz": 0
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": -1,
+      "dy": 0,
+      "dz": 0
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 0,
+      "dy": 0,
+      "dz": 0
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 1,
+      "dy": 0,
+      "dz": 0
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 2,
+      "dy": 0,
+      "dz": 0
+    },
+    {
+      "name": "embers:pipe",
+      "meta": 0,
+      "dx": 3,
+      "dy": 0,
+      "dz": 0
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 4,
+      "dy": 0,
+      "dz": 0
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 1,
+      "dx": 5,
+      "dy": 0,
+      "dz": 0
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 0,
+      "dx": -5,
+      "dy": 0,
+      "dz": 1
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": -4,
+      "dy": 0,
+      "dz": 1
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": -3,
+      "dy": 0,
+      "dz": 1
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": -2,
+      "dy": 0,
+      "dz": 1
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": -1,
+      "dy": 0,
+      "dz": 1
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 0,
+      "dy": 0,
+      "dz": 1
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 1,
+      "dy": 0,
+      "dz": 1
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 2,
+      "dy": 0,
+      "dz": 1
+    },
+    {
+      "name": "embers:pipe",
+      "meta": 0,
+      "dx": 3,
+      "dy": 0,
+      "dz": 1
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 4,
+      "dy": 0,
+      "dz": 1
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 1,
+      "dx": 5,
+      "dy": 0,
+      "dz": 1
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 3,
+      "dx": -5,
+      "dy": 0,
+      "dz": 2
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 3,
+      "dx": -4,
+      "dy": 0,
+      "dz": 2
+    },
+    {
+      "name": "cathedral:dwemer_block_carved",
+      "meta": 5,
+      "dx": -2,
+      "dy": 0,
+      "dz": 2
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": -1,
+      "dy": 0,
+      "dz": 2
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 0,
+      "dy": 0,
+      "dz": 2
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 1,
+      "dy": 0,
+      "dz": 2
+    },
+    {
+      "name": "cathedral:dwemer_block_carved",
+      "meta": 5,
+      "dx": 2,
+      "dy": 0,
+      "dz": 2
+    },
+    {
+      "name": "embers:pipe",
+      "meta": 0,
+      "dx": 3,
+      "dy": 0,
+      "dz": 2
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 3,
+      "dx": 4,
+      "dy": 0,
+      "dz": 2
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 3,
+      "dx": 5,
+      "dy": 0,
+      "dz": 2
+    },
+    {
+      "name": "embers:pipe",
+      "meta": 0,
+      "dx": -2,
+      "dy": 0,
+      "dz": 3
+    },
+    {
+      "name": "embers:pipe",
+      "meta": 0,
+      "dx": -1,
+      "dy": 0,
+      "dz": 3
+    },
+    {
+      "name": "embers:pipe",
+      "meta": 0,
+      "dx": 0,
+      "dy": 0,
+      "dz": 3
+    },
+    {
+      "name": "embers:pipe",
+      "meta": 0,
+      "dx": 1,
+      "dy": 0,
+      "dz": 3
+    },
+    {
+      "name": "embers:pipe",
+      "meta": 0,
+      "dx": 2,
+      "dy": 0,
+      "dz": 3
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 0,
+      "dx": -2,
+      "dy": 0,
+      "dz": 4
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": -1,
+      "dy": 0,
+      "dz": 4
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 0,
+      "dy": 0,
+      "dz": 4
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 1,
+      "dy": 0,
+      "dz": 4
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 1,
+      "dx": 2,
+      "dy": 0,
+      "dz": 4
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 0,
+      "dx": -2,
+      "dy": 0,
+      "dz": 5
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 3,
+      "dx": -1,
+      "dy": 0,
+      "dz": 5
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 3,
+      "dx": 0,
+      "dy": 0,
+      "dz": 5
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 3,
+      "dx": 1,
+      "dy": 0,
+      "dz": 5
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 1,
+      "dx": 2,
+      "dy": 0,
+      "dz": 5
+    },
+    {
+      "name": "quark:iron_plate_slab",
+      "meta": 0,
+      "dx": -1,
+      "dy": 1,
+      "dz": -4
+    },
+    {
+      "name": "quark:iron_plate_slab",
+      "meta": 0,
+      "dx": 0,
+      "dy": 1,
+      "dz": -4
+    },
+    {
+      "name": "quark:iron_plate_slab",
+      "meta": 0,
+      "dx": 1,
+      "dy": 1,
+      "dz": -4
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 2,
+      "dx": -1,
+      "dy": 1,
+      "dz": -3
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 2,
+      "dx": 0,
+      "dy": 1,
+      "dz": -3
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 2,
+      "dx": 1,
+      "dy": 1,
+      "dz": -3
+    },
+    {
+      "name": "cathedral:dwemer_block_carved",
+      "meta": 2,
+      "dx": -2,
+      "dy": 1,
+      "dz": -2
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": -1,
+      "dy": 1,
+      "dz": -2
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 0,
+      "dy": 1,
+      "dz": -2
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 1,
+      "dy": 1,
+      "dz": -2
+    },
+    {
+      "name": "cathedral:dwemer_block_carved",
+      "meta": 2,
+      "dx": 2,
+      "dy": 1,
+      "dz": -2
+    },
+    {
+      "name": "embers:pipe",
+      "meta": 0,
+      "dx": 3,
+      "dy": 1,
+      "dz": -2
+    },
+    {
+      "name": "quark:iron_plate_slab",
+      "meta": 0,
+      "dx": -4,
+      "dy": 1,
+      "dz": -1
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 0,
+      "dx": -3,
+      "dy": 1,
+      "dz": -1
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": -2,
+      "dy": 1,
+      "dz": -1
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": -1,
+      "dy": 1,
+      "dz": -1
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 0,
+      "dy": 1,
+      "dz": -1
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 1,
+      "dy": 1,
+      "dz": -1
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 2,
+      "dy": 1,
+      "dz": -1
+    },
+    {
+      "name": "quark:iron_plate_slab",
+      "meta": 0,
+      "dx": 3,
+      "dy": 1,
+      "dz": -1
+    },
+    {
+      "name": "quark:iron_plate_slab",
+      "meta": 0,
+      "dx": 4,
+      "dy": 1,
+      "dz": -1
+    },
+    {
+      "name": "quark:iron_plate_slab",
+      "meta": 0,
+      "dx": -4,
+      "dy": 1,
+      "dz": 0
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 0,
+      "dx": -3,
+      "dy": 1,
+      "dz": 0
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": -2,
+      "dy": 1,
+      "dz": 0
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": -1,
+      "dy": 1,
+      "dz": 0
+    },
+    {
+      "name": "cathedral:dwemer_block_carved",
+      "meta": 5,
+      "dx": 0,
+      "dy": 1,
+      "dz": 0
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 1,
+      "dy": 1,
+      "dz": 0
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": 2,
+      "dy": 1,
+      "dz": 0
+    },
+    {
+      "name": "quark:iron_plate_slab",
+      "meta": 0,
+      "dx": 3,
+      "dy": 1,
+      "dz": 0
+    },
+    {
+      "name": "quark:iron_plate_slab",
+      "meta": 0,
+      "dx": 4,
+      "dy": 1,
+      "dz": 0
+    },
+    {
+      "name": "quark:iron_plate_slab",
+      "meta": 0,
+      "dx": -4,
+      "dy": 1,
+      "dz": 1
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 0,
+      "dx": -3,
+      "dy": 1,
+      "dz": 1
+    },
+    {
+      "name": "quark:iron_plate",
+      "meta": 0,
+      "dx": -2,
+      "dy": 1,
+      "dz": 1
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 1,
+      "dx": -1,
+      "dy": 1,
+      "dz": 1
+    },
+    {
+      "name": "quark:iron_plate_slab",
+      "meta": 0,
+      "dx": 0,
+      "dy": 1,
+      "dz": 1
+    },
+    {
+      "name": "quark:iron_plate_slab",
+      "meta": 0,
+      "dx": 1,
+      "dy": 1,
+      "dz": 1
+    },
+    {
+      "name": "quark:iron_plate_slab",
+      "meta": 0,
+      "dx": 2,
+      "dy": 1,
+      "dz": 1
+    },
+    {
+      "name": "quark:iron_plate_slab",
+      "meta": 0,
+      "dx": 3,
+      "dy": 1,
+      "dz": 1
+    },
+    {
+      "name": "quark:iron_plate_slab",
+      "meta": 0,
+      "dx": 4,
+      "dy": 1,
+      "dz": 1
+    },
+    {
+      "name": "cathedral:dwemer_block_carved",
+      "meta": 2,
+      "dx": -2,
+      "dy": 1,
+      "dz": 2
+    },
+    {
+      "name": "quark:iron_plate_slab",
+      "meta": 0,
+      "dx": -1,
+      "dy": 1,
+      "dz": 2
+    },
+    {
+      "name": "quark:iron_plate_slab",
+      "meta": 0,
+      "dx": 0,
+      "dy": 1,
+      "dz": 2
+    },
+    {
+      "name": "quark:iron_plate_slab",
+      "meta": 0,
+      "dx": 1,
+      "dy": 1,
+      "dz": 2
+    },
+    {
+      "name": "cathedral:dwemer_block_carved",
+      "meta": 2,
+      "dx": 2,
+      "dy": 1,
+      "dz": 2
+    },
+    {
+      "name": "embers:pipe",
+      "meta": 0,
+      "dx": 3,
+      "dy": 1,
+      "dz": 2
+    },
+    {
+      "name": "embers:pipe",
+      "meta": 0,
+      "dx": -2,
+      "dy": 1,
+      "dz": 3
+    },
+    {
+      "name": "quark:iron_plate_slab",
+      "meta": 0,
+      "dx": -1,
+      "dy": 1,
+      "dz": 3
+    },
+    {
+      "name": "quark:iron_plate_slab",
+      "meta": 0,
+      "dx": 0,
+      "dy": 1,
+      "dz": 3
+    },
+    {
+      "name": "quark:iron_plate_slab",
+      "meta": 0,
+      "dx": 1,
+      "dy": 1,
+      "dz": 3
+    },
+    {
+      "name": "embers:pipe",
+      "meta": 0,
+      "dx": 2,
+      "dy": 1,
+      "dz": 3
+    },
+    {
+      "name": "quark:iron_plate_slab",
+      "meta": 0,
+      "dx": -1,
+      "dy": 1,
+      "dz": 4
+    },
+    {
+      "name": "quark:iron_plate_slab",
+      "meta": 0,
+      "dx": 0,
+      "dy": 1,
+      "dz": 4
+    },
+    {
+      "name": "quark:iron_plate_slab",
+      "meta": 0,
+      "dx": 1,
+      "dy": 1,
+      "dz": 4
+    },
+    {
+      "name": "embers:ember_receiver",
+      "meta": 2,
+      "dx": 2,
+      "dy": 2,
+      "dz": -3
+    },
+    {
+      "name": "embers:ember_activator",
+      "meta": 0,
+      "dx": -2,
+      "dy": 2,
+      "dz": -2
+    },
+    {
+      "name": "embers:block_furnace",
+      "meta": 0,
+      "dx": 2,
+      "dy": 2,
+      "dz": -2
+    },
+    {
+      "name": "embers:pipe",
+      "meta": 0,
+      "dx": 3,
+      "dy": 2,
+      "dz": -2
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 0,
+      "dx": -1,
+      "dy": 2,
+      "dz": -1
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 2,
+      "dx": 0,
+      "dy": 2,
+      "dz": -1
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 1,
+      "dx": 1,
+      "dy": 2,
+      "dz": -1
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 0,
+      "dx": -1,
+      "dy": 2,
+      "dz": 0
+    },
+    {
+      "name": "cathedral:dwemer_block_carved",
+      "meta": 2,
+      "dx": 0,
+      "dy": 2,
+      "dz": 0
+    },
+    {
+      "name": "quark:iron_plate_stairs",
+      "meta": 1,
+      "dx": 1,
+      "dy": 2,
+      "dz": 0
+    },
+    {
+      "name": "embers:ember_receiver",
+      "meta": 4,
+      "dx": -3,
+      "dy": 2,
+      "dz": 2
+    },
+    {
+      "name": "embers:block_furnace",
+      "meta": 0,
+      "dx": -2,
+      "dy": 2,
+      "dz": 2
+    },
+    {
+      "name": "embers:ember_receiver",
+      "meta": 4,
+      "dx": 1,
+      "dy": 2,
+      "dz": 2
+    },
+    {
+      "name": "embers:mixer",
+      "meta": 0,
+      "dx": 2,
+      "dy": 2,
+      "dz": 2
+    },
+    {
+      "name": "embers:pipe",
+      "meta": 0,
+      "dx": 3,
+      "dy": 2,
+      "dz": 2
+    },
+    {
+      "name": "embers:pipe",
+      "meta": 0,
+      "dx": -2,
+      "dy": 2,
+      "dz": 3
+    },
+    {
+      "name": "embers:pipe",
+      "meta": 0,
+      "dx": 2,
+      "dy": 2,
+      "dz": 3
+    },
+    {
+      "name": "embers:caminite_lever",
+      "meta": 4,
+      "dx": -3,
+      "dy": 3,
+      "dz": -3
+    },
+    {
+      "name": "embers:ember_emitter",
+      "meta": 2,
+      "dx": -2,
+      "dy": 3,
+      "dz": -3
+    },
+    {
+      "name": "embers:ember_emitter",
+      "meta": 4,
+      "dx": -3,
+      "dy": 3,
+      "dz": -2
+    },
+    {
+      "name": "embers:ember_activator",
+      "meta": 1,
+      "dx": -2,
+      "dy": 3,
+      "dz": -2
+    },
+    {
+      "name": "embers:block_furnace",
+      "meta": 1,
+      "dx": 2,
+      "dy": 3,
+      "dz": -2
+    },
+    {
+      "name": "embers:pump",
+      "meta": 0,
+      "dx": 3,
+      "dy": 3,
+      "dz": -2
+    },
+    {
+      "name": "embers:caminite_lever",
+      "meta": 3,
+      "dx": 3,
+      "dy": 3,
+      "dz": -1
+    },
+    {
+      "name": "embers:stamper_base",
+      "meta": 0,
+      "dx": 0,
+      "dy": 3,
+      "dz": 0
+    },
+    {
+      "name": "embers:pipe",
+      "meta": 0,
+      "dx": 0,
+      "dy": 3,
+      "dz": 1
+    },
+    {
+      "name": "embers:caminite_lever",
+      "meta": 4,
+      "dx": 1,
+      "dy": 3,
+      "dz": 1
+    },
+    {
+      "name": "embers:block_furnace",
+      "meta": 1,
+      "dx": -2,
+      "dy": 3,
+      "dz": 2
+    },
+    {
+      "name": "embers:pipe",
+      "meta": 0,
+      "dx": 0,
+      "dy": 3,
+      "dz": 2
+    },
+    {
+      "name": "embers:pump",
+      "meta": 0,
+      "dx": 1,
+      "dy": 3,
+      "dz": 2
+    },
+    {
+      "name": "embers:mixer",
+      "meta": 1,
+      "dx": 2,
+      "dy": 3,
+      "dz": 2
+    },
+    {
+      "name": "embers:pump",
+      "meta": 0,
+      "dx": -2,
+      "dy": 3,
+      "dz": 3
+    },
+    {
+      "name": "embers:caminite_lever",
+      "meta": 1,
+      "dx": -1,
+      "dy": 3,
+      "dz": 3
+    },
+    {
+      "name": "cathedral:dwemer_light_normal",
+      "meta": 0,
+      "dx": -3,
+      "dy": 5,
+      "dz": -3
+    },
+    {
+      "name": "cathedral:dwemer_light_normal",
+      "meta": 0,
+      "dx": 3,
+      "dy": 5,
+      "dz": -3
+    },
+    {
+      "name": "embers:caminite_lever",
+      "meta": 4,
+      "dx": 0,
+      "dy": 5,
+      "dz": -1
+    },
+    {
+      "name": "embers:stamper",
+      "meta": 0,
+      "dx": 0,
+      "dy": 5,
+      "dz": 0
+    },
+    {
+      "name": "embers:ember_receiver",
+      "meta": 3,
+      "dx": 0,
+      "dy": 5,
+      "dz": 1
+    },
+    {
+      "name": "cathedral:dwemer_light_normal",
+      "meta": 0,
+      "dx": -3,
+      "dy": 5,
+      "dz": 3
+    },
+    {
+      "name": "cathedral:dwemer_light_normal",
+      "meta": 0,
+      "dx": 3,
+      "dy": 5,
+      "dz": 3
+    },
+    {
+      "name": "cathedral:cathedral_pillar_various",
+      "meta": 12,
+      "dx": 0,
+      "dy": 6,
+      "dz": 0
+    },
+    {
+      "name": "cathedral:cathedral_pillar_various",
+      "meta": 12,
+      "dx": 0,
+      "dy": 7,
+      "dz": 0
+    },
+    {
+      "name": "cathedral:dwemer_light_normal",
+      "meta": 0,
+      "dx": -1,
+      "dy": 8,
+      "dz": -1
+    },
+    {
+      "name": "cathedral:dwemer_light_normal",
+      "meta": 0,
+      "dx": 1,
+      "dy": 8,
+      "dz": -1
+    },
+    {
+      "name": "cathedral:dwemer_light_normal",
+      "meta": 0,
+      "dx": -1,
+      "dy": 8,
+      "dz": 1
+    },
+    {
+      "name": "cathedral:dwemer_light_normal",
+      "meta": 0,
+      "dx": 1,
+      "dy": 8,
+      "dz": 1
+    }
+  ],
+  "connections": [
+    {
+      "dx": 3,
+      "dy": 0,
+      "dz": -2,
+      "north": 0,
+      "south": 1,
+      "east": 0,
+      "west": 0,
+      "up": 1,
+      "down": 0
+    },
+    {
+      "dx": 3,
+      "dy": 1,
+      "dz": -2,
+      "north": 0,
+      "south": 0,
+      "east": 0,
+      "west": 0,
+      "up": 1,
+      "down": 1
+    },
+    {
+      "dx": 3,
+      "dy": 2,
+      "dz": -2,
+      "north": 0,
+      "south": 0,
+      "east": 0,
+      "west": 0,
+      "up": 1,
+      "down": 1
+    },
+    {
+      "dx": -3,
+      "dy": 3,
+      "dz": -2,
+      "north": 1,
+      "south": 0,
+      "east": 0,
+      "west": 0,
+      "up": 0,
+      "down": 0
+    },
+    {
+      "dx": 3,
+      "dy": 3,
+      "dz": -2,
+      "north": 0,
+      "south": 3,
+      "east": 0,
+      "west": 2,
+      "up": 0,
+      "down": 1
+    },
+    {
+      "dx": 3,
+      "dy": 0,
+      "dz": -1,
+      "north": 1,
+      "south": 1,
+      "east": 0,
+      "west": 0,
+      "up": 0,
+      "down": 0
+    },
+    {
+      "dx": 3,
+      "dy": 0,
+      "dz": 0,
+      "north": 1,
+      "south": 1,
+      "east": 0,
+      "west": 0,
+      "up": 0,
+      "down": 0
+    },
+    {
+      "dx": 3,
+      "dy": 0,
+      "dz": 1,
+      "north": 1,
+      "south": 1,
+      "east": 0,
+      "west": 0,
+      "up": 0,
+      "down": 0
+    },
+    {
+      "dx": 0,
+      "dy": 3,
+      "dz": 1,
+      "north": 2,
+      "south": 1,
+      "east": 0,
+      "west": 0,
+      "up": 0,
+      "down": 0
+    },
+    {
+      "dx": 3,
+      "dy": 0,
+      "dz": 2,
+      "north": 1,
+      "south": 0,
+      "east": 0,
+      "west": 0,
+      "up": 1,
+      "down": 0
+    },
+    {
+      "dx": 3,
+      "dy": 1,
+      "dz": 2,
+      "north": 0,
+      "south": 0,
+      "east": 0,
+      "west": 0,
+      "up": 1,
+      "down": 1
+    },
+    {
+      "dx": 3,
+      "dy": 2,
+      "dz": 2,
+      "north": 0,
+      "south": 0,
+      "east": 0,
+      "west": 2,
+      "up": 0,
+      "down": 1
+    },
+    {
+      "dx": 0,
+      "dy": 3,
+      "dz": 2,
+      "north": 1,
+      "south": 0,
+      "east": 1,
+      "west": 0,
+      "up": 0,
+      "down": 0
+    },
+    {
+      "dx": 1,
+      "dy": 3,
+      "dz": 2,
+      "north": 3,
+      "south": 0,
+      "east": 2,
+      "west": 1,
+      "up": 0,
+      "down": 0
+    },
+    {
+      "dx": -2,
+      "dy": 0,
+      "dz": 3,
+      "north": 0,
+      "south": 0,
+      "east": 1,
+      "west": 0,
+      "up": 1,
+      "down": 0
+    },
+    {
+      "dx": -1,
+      "dy": 0,
+      "dz": 3,
+      "north": 0,
+      "south": 0,
+      "east": 1,
+      "west": 1,
+      "up": 0,
+      "down": 0
+    },
+    {
+      "dx": 0,
+      "dy": 0,
+      "dz": 3,
+      "north": 0,
+      "south": 0,
+      "east": 1,
+      "west": 1,
+      "up": 0,
+      "down": 0
+    },
+    {
+      "dx": 1,
+      "dy": 0,
+      "dz": 3,
+      "north": 0,
+      "south": 0,
+      "east": 1,
+      "west": 1,
+      "up": 0,
+      "down": 0
+    },
+    {
+      "dx": 2,
+      "dy": 0,
+      "dz": 3,
+      "north": 0,
+      "south": 0,
+      "east": 0,
+      "west": 1,
+      "up": 1,
+      "down": 0
+    },
+    {
+      "dx": -2,
+      "dy": 1,
+      "dz": 3,
+      "north": 0,
+      "south": 0,
+      "east": 0,
+      "west": 0,
+      "up": 1,
+      "down": 1
+    },
+    {
+      "dx": 2,
+      "dy": 1,
+      "dz": 3,
+      "north": 0,
+      "south": 0,
+      "east": 0,
+      "west": 0,
+      "up": 1,
+      "down": 1
+    },
+    {
+      "dx": -2,
+      "dy": 2,
+      "dz": 3,
+      "north": 0,
+      "south": 0,
+      "east": 0,
+      "west": 0,
+      "up": 1,
+      "down": 1
+    },
+    {
+      "dx": 2,
+      "dy": 2,
+      "dz": 3,
+      "north": 2,
+      "south": 0,
+      "east": 0,
+      "west": 0,
+      "up": 0,
+      "down": 1
+    },
+    {
+      "dx": -2,
+      "dy": 3,
+      "dz": 3,
+      "north": 2,
+      "south": 0,
+      "east": 3,
+      "west": 0,
+      "up": 0,
+      "down": 1
+    }
+  ]
+}

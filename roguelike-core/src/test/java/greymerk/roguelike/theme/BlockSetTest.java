@@ -102,4 +102,27 @@ public class BlockSetTest {
     assertThat(bookshelfBrush.getJson()).isEqualTo(bookshelf);
   }
 
+  @Test
+  public void omittedPortalWallDefaultsToPillar() {
+    JsonObject json = new JsonObject();
+    JsonObject pillar = new JsonObject();
+    pillar.addProperty("name", "minecraft:obsidian");
+    json.add("pillar", pillar);
+
+    BlockSet test = BlockSetParser.parseBlockSet(json, new BlockSet());
+    assertThat(test.getPortalWall()).isEqualTo(test.getPillar());
+  }
+
+  @Test
+  public void jsonPortalWall() {
+    JsonObject json = new JsonObject();
+    JsonObject portalWall = new JsonObject();
+    portalWall.addProperty("name", "minecraft:netherrack");
+    json.add("portal_wall", portalWall);
+
+    BlockSet test = BlockSetParser.parseBlockSet(json, new BlockSet());
+
+    SingleBlockBrush portalWallBrush = (SingleBlockBrush) test.getPortalWall();
+    assertThat(portalWallBrush.getJson()).isEqualTo(portalWall);
+  }
 }

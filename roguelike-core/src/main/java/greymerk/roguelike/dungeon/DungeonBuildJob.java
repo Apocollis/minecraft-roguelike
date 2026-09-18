@@ -73,6 +73,7 @@ public class DungeonBuildJob {
     }
     if (!editor.isWorldAvailable()) {
       logger.warn("Dropping dungeon generation for id {} at {}; world is unavailable.", settings.getId(), coord);
+      editor.clearDungeonWaystoneName();
       finished = true;
       return false;
     }
@@ -92,6 +93,7 @@ public class DungeonBuildJob {
       }
     } catch (Exception e) {
       logger.error("Dungeon generation failed for id {} at {}.", settings.getId(), coord, e);
+      editor.clearDungeonWaystoneName();
       finished = true;
       return false;
     } finally {
@@ -158,6 +160,7 @@ public class DungeonBuildJob {
     }
     dungeon.postLevelBoundingBoxes(generationPartsEvents, settings.getId());
     dungeon.registerStructureBoxes();
+    editor.clearDungeonWaystoneName();
     finished = true;
   }
 }

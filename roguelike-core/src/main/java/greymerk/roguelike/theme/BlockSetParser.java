@@ -29,7 +29,8 @@ class BlockSetParser {
         parseBars(json).orElse(baseBlockSet.getBars()),
         parseGlass(json).orElse(baseBlockSet.getGlass()),
         parseCrop(json).orElse(baseBlockSet.getCrop()),
-        parseBookshelf(json).orElse(baseBlockSet.getBookshelf())
+        parseBookshelf(json).orElse(baseBlockSet.getBookshelf()),
+        parsePortalWall(json).orElse(baseBlockSet.getConfiguredPortalWall())
     );
   }
 
@@ -108,6 +109,16 @@ class BlockSetParser {
     }
     if (json.has("bookshelves")) {
       return ofNullable(BlockProvider.create(json.get("bookshelves").getAsJsonObject()));
+    }
+    return empty();
+  }
+
+  private static Optional<BlockBrush> parsePortalWall(JsonObject json) throws DungeonSettingParseException {
+    if (json.has("portal_wall")) {
+      return ofNullable(BlockProvider.create(json.get("portal_wall").getAsJsonObject()));
+    }
+    if (json.has("portalWall")) {
+      return ofNullable(BlockProvider.create(json.get("portalWall").getAsJsonObject()));
     }
     return empty();
   }

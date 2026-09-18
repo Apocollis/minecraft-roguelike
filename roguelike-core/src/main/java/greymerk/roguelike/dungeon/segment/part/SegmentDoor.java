@@ -22,7 +22,7 @@ public class SegmentDoor extends SegmentBase {
     Coord cursor = origin.copy().translate(outward, 2);
     SecretsSetting secrets = level.getSettings().getSecrets();
     Optional<BaseRoom> secretMaybe = generateSecret(secrets, editor, level.getSettings(), outward, origin.copy());
-    generateSealedAlcove(editor, theme, origin, outward);
+    generateSealedAlcove(editor, level, theme, origin, outward);
 
     cursor.up(2);
     for (Direction d : orthogonal) {

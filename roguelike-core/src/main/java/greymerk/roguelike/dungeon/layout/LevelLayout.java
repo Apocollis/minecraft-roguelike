@@ -141,6 +141,10 @@ public class LevelLayout {
     return getNodes().stream().anyMatch(node -> node.contains(coord));
   }
 
+  public boolean containsTunnelAt(Coord coord) {
+    return getTunnels().stream().anyMatch(tunnel -> tunnel.containsCoord(coord));
+  }
+
   public List<Float> getLevelBoundingBox() {
     float maxX = Integer.MIN_VALUE;
     float maxY = Integer.MIN_VALUE;

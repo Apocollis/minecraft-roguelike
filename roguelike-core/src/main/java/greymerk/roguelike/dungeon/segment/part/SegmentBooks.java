@@ -13,7 +13,7 @@ public class SegmentBooks extends SegmentBase {
   @Override
   protected void genWall(WorldEditor editor, DungeonLevel level, Direction outward, Theme theme, Coord origin) {
     generateSecret(level.getSettings().getSecrets(), editor, level.getSettings(), outward, origin.copy());
-    generateSealedAlcove(editor, theme, origin, outward);
+    generateSealedAlcove(editor, level, theme, origin, outward);
 
     StairsBlock stair = getSecondaryStairs(theme);
     Coord cursor = origin.copy().translate(outward, 2).up(2);

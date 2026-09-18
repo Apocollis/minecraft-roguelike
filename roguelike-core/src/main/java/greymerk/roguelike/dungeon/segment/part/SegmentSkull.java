@@ -18,7 +18,7 @@ public class SegmentSkull extends SegmentBase {
     StairsBlock stair = getSecondaryStairs(theme);
 
     Direction[] orthogonals = dir.orthogonals();
-    generateSealedAlcove(editor, theme, origin, dir);
+    generateSealedAlcove(editor, level, theme, origin, dir);
 
     Coord cursor;
     for (Direction d : orthogonals) {

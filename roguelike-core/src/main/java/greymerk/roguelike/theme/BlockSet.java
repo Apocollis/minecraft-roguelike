@@ -26,6 +26,7 @@ public class BlockSet {
   private BlockBrush glass;
   private BlockBrush crop;
   private BlockBrush bookshelf = BlockType.BOOKSHELF.getBrush();
+  private BlockBrush portalWall;
 
   public BlockSet() {
   }
@@ -97,6 +98,23 @@ public class BlockSet {
       BlockBrush crop,
       BlockBrush bookshelf
   ) {
+    this(floor, walls, stair, pillar, door, lightBlock, liquid, bars, glass, crop, bookshelf, null);
+  }
+
+  public BlockSet(
+      BlockBrush floor,
+      BlockBrush walls,
+      StairsBlock stair,
+      BlockBrush pillar,
+      DoorBlock door,
+      BlockBrush lightBlock,
+      BlockBrush liquid,
+      BlockBrush bars,
+      BlockBrush glass,
+      BlockBrush crop,
+      BlockBrush bookshelf,
+      BlockBrush portalWall
+  ) {
     this.floor = floor;
     this.walls = walls;
     this.stair = stair;
@@ -108,6 +126,7 @@ public class BlockSet {
     this.glass = glass;
     this.crop = crop;
     this.bookshelf = bookshelf;
+    this.portalWall = portalWall;
   }
 
   static BlockSet inherit(
@@ -134,7 +153,8 @@ public class BlockSet {
         ofNullable(childBlockSet.bars).orElse(parentBlockSet.bars),
         ofNullable(childBlockSet.getGlass()).orElse(parentBlockSet.getGlass()),
         ofNullable(childBlockSet.getCrop()).orElse(parentBlockSet.getCrop()),
-        ofNullable(childBlockSet.getBookshelf()).orElse(parentBlockSet.getBookshelf()));
+        ofNullable(childBlockSet.getBookshelf()).orElse(parentBlockSet.getBookshelf()),
+        ofNullable(childBlockSet.portalWall).orElse(parentBlockSet.portalWall));
   }
 
   public BlockBrush getWall() {
@@ -179,5 +199,13 @@ public class BlockSet {
 
   public BlockBrush getBookshelf() {
     return ofNullable(bookshelf).orElse(BlockType.BOOKSHELF.getBrush()).copy();
+  }
+
+  public BlockBrush getPortalWall() {
+    return portalWall != null ? portalWall.copy() : getPillar();
+  }
+
+  BlockBrush getConfiguredPortalWall() {
+    return portalWall;
   }
 }

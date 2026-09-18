@@ -1,9 +1,11 @@
 package greymerk.roguelike.dungeon.rooms;
 
 import com.github.fnar.roguelike.dungeon.rooms.BunkerRoom;
+import com.github.fnar.roguelike.dungeon.rooms.EmberSmelteryRoom;
 import com.github.fnar.roguelike.dungeon.rooms.FountainRoom;
 import com.github.fnar.roguelike.dungeon.rooms.DimensionPortalRoom;
 import com.github.fnar.roguelike.dungeon.rooms.StudyRoom;
+import com.github.fnar.roguelike.dungeon.rooms.WaystoneRoom;
 import com.github.fnar.roguelike.dungeon.rooms.Platforms2Room;
 import com.github.fnar.roguelike.dungeon.rooms.PlatformsRoom;
 import com.github.fnar.roguelike.dungeon.rooms.SmallLiquidPitRoom;
@@ -126,6 +128,8 @@ public class RoomSetting {
         return new DungeonsCrypt(this, levelSettings, worldEditor);
       case DARKHALL:
         return new DarkHallRoom(this, levelSettings, worldEditor);
+      case EMBER_SMELTERY:
+        return new EmberSmelteryRoom(this, levelSettings, worldEditor);
       case ENCHANT:
         return new DungeonsEnchant(this, levelSettings, worldEditor);
       case ENDER:
@@ -192,6 +196,8 @@ public class RoomSetting {
         return new TreethoRoom(this, levelSettings, worldEditor);
       case TWILIGHT_PORTAL:
         return new DimensionPortalRoom(this, levelSettings, worldEditor);
+      case WAYSTONE:
+        return new WaystoneRoom(this, levelSettings, worldEditor);
     }
   }
 

@@ -17,6 +17,7 @@ Supporting references:
 | [issues-and-fixes.md](issues-and-fixes.md) | Bugs we hit and how they were fixed |
 | [tweaks-handoff.md](tweaks-handoff.md) | Dungeon mixin cleanup in aqtweaks |
 | [conventions.md](conventions.md) | Permissions, plan-before-code, placement |
+| [rcst-to-room.md](rcst-to-room.md) | Recurrent Complex `.rcst` export → room overlay |
 
 **Modid:** `roguelike`  
 **Current version:** `2.5.4`  

@@ -19,26 +19,19 @@ public class SegmentSewerDrain extends SegmentBase {
 
     Direction[] orthogonals = dir.orthogonals();
 
+    generateSealedSewerTrough(editor, level, theme, origin, dir);
+    fillAlcoveShell(editor, level, theme, origin, dir, true);
+
     Coord start = origin.copy();
-    start.down();
+    start.translate(dir, 2);
     Coord end = start.copy();
     start.translate(orthogonals[0]);
     end.translate(orthogonals[1]);
-    SingleBlockBrush.AIR.fill(editor, RectSolid.newRect(start, end));
-    start.down();
-    end.down();
-    RectSolid.newRect(start, end).fill(editor, getPrimaryLiquid(theme), false, true);
-
-    start = origin.copy();
-    start.translate(dir, 2);
-    end = start.copy();
-    start.translate(orthogonals[0]);
-    end.translate(orthogonals[1]);
     end.up(2);
-    SingleBlockBrush.AIR.fill(editor, RectSolid.newRect(start, end));
+    SingleBlockBrush.AIR.fill(editor, RectSolid.newRect(start, end), false, true);
     start.translate(dir);
     end.translate(dir);
-    RectSolid.newRect(start, end).fill(editor, getPrimaryWalls(theme));
+    RectSolid.newRect(start, end).fill(editor, getPrimaryWalls(theme), true, true);
 
     Coord cursor;
     for (Direction o : orthogonals) {
@@ -52,12 +45,14 @@ public class SegmentSewerDrain extends SegmentBase {
       stair.setUpsideDown(true).setFacing(o.reverse()).stroke(editor, cursor);
     }
 
+    Coord outlet = origin.copy().up().translate(dir, 5);
+    generateSealedLiquidPocket(editor, level, theme, outlet);
     start = origin.copy();
     start.up();
     end = start.copy();
-    end.translate(dir, 5);
-    SingleBlockBrush.AIR.fill(editor, RectSolid.newRect(start, end));
-    getPrimaryLiquid(theme).stroke(editor, end);
+    end.translate(dir, 4);
+    SingleBlockBrush.AIR.fill(editor, RectSolid.newRect(start, end), false, true);
+    getPrimaryLiquid(theme).stroke(editor, outlet, true, true);
 
     cursor = origin.copy();
     cursor.down();

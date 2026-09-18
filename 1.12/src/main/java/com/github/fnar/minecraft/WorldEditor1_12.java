@@ -130,6 +130,7 @@ public class WorldEditor1_12 implements WorldEditor {
   private SingleBlockBrush mappedBrushCache;
   private Direction mappedFacingCache;
   private int mappedExtraCache = Integer.MIN_VALUE;
+  private String dungeonWaystoneName;
 
   public WorldEditor1_12(World world) {
     this.world = world;
@@ -658,12 +659,50 @@ public class WorldEditor1_12 implements WorldEditor {
     return com.github.fnar.minecraft.compat.RandomPortalsActivator1_12.activate(world, inner, randomPortalsGroupId);
   }
 
+  @Override
+  public void mergeTileEntityPipeConnections(
+      Coord coord,
+      int north,
+      int south,
+      int east,
+      int west,
+      int up,
+      int down
+  ) {
+    if (world == null || world.isRemote || coord == null) {
+      return;
+    }
+    TileEntity tile = getTileEntity(coord);
+    if (tile == null) {
+      return;
+    }
+    NBTTagCompound nbt = tile.writeToNBT(new NBTTagCompound());
+    nbt.setByte("north", (byte) north);
+    nbt.setByte("south", (byte) south);
+    nbt.setByte("east", (byte) east);
+    nbt.setByte("west", (byte) west);
+    nbt.setByte("up", (byte) up);
+    nbt.setByte("down", (byte) down);
+    tile.readFromNBT(nbt);
+    tile.markDirty();
+  }
+
   public Biome getBiomeAt(Coord coord) {
     return world.getBiome(BlockPosMapper1_12.map(coord));
   }
 
   @Override
   public void generateWaystone(Coord pos) {
+    generateWaystone(pos, getOrCreateDungeonWaystoneName(pos), Direction.NORTH);
+  }
+
+  @Override
+  public void generateWaystone(Coord pos, Direction facing) {
+    generateWaystone(pos, getOrCreateDungeonWaystoneName(pos), facing);
+  }
+
+  @Override
+  public void generateWaystone(Coord pos, String name, Direction facing) {
     if (!net.minecraftforge.fml.common.Loader.isModLoaded("waystones")) {
       return;
     }
@@ -677,7 +716,7 @@ public class WorldEditor1_12 implements WorldEditor {
       // BASE=false on the upper half. Meta 0 alone places only a dummy top half.
       BlockPos basePos = BlockPosMapper1_12.map(pos);
       BlockPos topPos = basePos.up();
-      int facingIndex = net.minecraft.util.EnumFacing.NORTH.getIndex();
+      int facingIndex = waystoneFacingIndex(facing);
       IBlockState baseState = waystoneBlock.getStateFromMeta(8 | facingIndex);
       IBlockState topState = waystoneBlock.getStateFromMeta(facingIndex);
 
@@ -688,34 +727,11 @@ public class WorldEditor1_12 implements WorldEditor {
 
       TileEntity tile = world.getTileEntity(basePos);
       if (tile != null) {
-        Biome biome = world.getBiome(basePos);
-        String name = null;
-        try {
-          Class<?> nameGenClass = Class.forName("net.blay09.mods.waystones.worldgen.NameGenerator");
-          java.lang.reflect.Method getMethod = nameGenClass.getMethod("get", World.class);
-          Object nameGen = getMethod.invoke(null, world);
-          java.lang.reflect.Method getNameMethod = nameGenClass.getMethod("getName", BlockPos.class, int.class, Biome.class, Random.class);
-          name = (String) getNameMethod.invoke(nameGen, basePos, world.provider.getDimension(), biome, random);
-        } catch (Throwable e) {
-          logger.info("Could not invoke Waystones NameGenerator via reflection: {}", e.getMessage());
-        }
-
-        if (name != null && name.contains(" ")) {
-          name = name.split(" ")[0];
-        }
-
-        if (name == null || name.isEmpty()) {
-          name = "Eniko";
-        }
-
-        String[] suffixes = new String[] {
-            "Tower", "Keep", "Vault", "Reach", "Spire", "Citadel", "Hold", "Apex", "Overlook", "Bastion"
-        };
-        String suffix = suffixes[random.nextInt(suffixes.length)];
-        String fullName = name + " " + suffix;
-
+        String waystoneName = (name == null || name.isEmpty())
+            ? getOrCreateDungeonWaystoneName(pos)
+            : name;
         NBTTagCompound nbt = tile.writeToNBT(new NBTTagCompound());
-        nbt.setString("WaystoneName", fullName);
+        nbt.setString("WaystoneName", waystoneName);
         nbt.setBoolean("WasGenerated", true);
         nbt.setBoolean("IsGlobal", false);
         nbt.setBoolean("IsDummy", false);
@@ -725,6 +741,68 @@ public class WorldEditor1_12 implements WorldEditor {
       }
     } catch (Throwable t) {
       logger.warn("Failed to generate Waystone at {}: {}", pos, t.getMessage());
+    }
+  }
+
+  @Override
+  public String getOrCreateDungeonWaystoneName() {
+    return getOrCreateDungeonWaystoneName(null);
+  }
+
+  @Override
+  public String getOrCreateDungeonWaystoneName(Coord at) {
+    if (dungeonWaystoneName == null) {
+      dungeonWaystoneName = chooseWaystoneName(at);
+    }
+    return dungeonWaystoneName;
+  }
+
+  @Override
+  public void clearDungeonWaystoneName() {
+    dungeonWaystoneName = null;
+  }
+
+  private String chooseWaystoneName(Coord at) {
+    String name = null;
+    try {
+      BlockPos samplePos = at != null
+          ? BlockPosMapper1_12.map(at)
+          : new BlockPos(0, 64, 0);
+      Biome biome = world.getBiome(samplePos);
+      Class<?> nameGenClass = Class.forName("net.blay09.mods.waystones.worldgen.NameGenerator");
+      java.lang.reflect.Method getMethod = nameGenClass.getMethod("get", World.class);
+      Object nameGen = getMethod.invoke(null, world);
+      java.lang.reflect.Method getNameMethod = nameGenClass.getMethod("getName", BlockPos.class, int.class, Biome.class, Random.class);
+      name = (String) getNameMethod.invoke(nameGen, samplePos, world.provider.getDimension(), biome, random);
+    } catch (Throwable e) {
+      logger.info("Could not invoke Waystones NameGenerator via reflection: {}", e.getMessage());
+    }
+
+    if (name != null && name.contains(" ")) {
+      name = name.split(" ")[0];
+    }
+    if (name == null || name.isEmpty()) {
+      name = "Eniko";
+    }
+    String[] suffixes = new String[] {
+        "Tower", "Keep", "Vault", "Reach", "Spire", "Citadel", "Hold", "Apex", "Overlook", "Bastion"
+    };
+    return name + " " + suffixes[random.nextInt(suffixes.length)];
+  }
+
+  private static int waystoneFacingIndex(Direction facing) {
+    if (facing == null) {
+      return net.minecraft.util.EnumFacing.NORTH.getIndex();
+    }
+    switch (facing) {
+      case SOUTH:
+        return net.minecraft.util.EnumFacing.SOUTH.getIndex();
+      case WEST:
+        return net.minecraft.util.EnumFacing.WEST.getIndex();
+      case EAST:
+        return net.minecraft.util.EnumFacing.EAST.getIndex();
+      default:
+        return net.minecraft.util.EnumFacing.NORTH.getIndex();
     }
   }
 

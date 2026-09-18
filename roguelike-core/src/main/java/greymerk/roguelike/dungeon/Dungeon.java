@@ -317,6 +317,7 @@ public class Dungeon {
   void beginBuild(Coord coord, DungeonSettings dungeonSettings) {
     origin = coord.copy().setY(TOPLEVEL);
     levels.clear();
+    editor.getOrCreateDungeonWaystoneName(origin);
     IntStream.range(0, dungeonSettings.getNumLevels())
         .mapToObj(dungeonSettings::getLevelSettings)
         .map(DungeonLevel::new)

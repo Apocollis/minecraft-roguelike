@@ -9,7 +9,6 @@ import greymerk.roguelike.worldgen.BlockBrush;
 import greymerk.roguelike.worldgen.Coord;
 import greymerk.roguelike.worldgen.Direction;
 import greymerk.roguelike.worldgen.WorldEditor;
-import greymerk.roguelike.worldgen.shapes.RectSolid;
 
 public class SegmentSewerArch extends SegmentBase {
 
@@ -20,10 +19,10 @@ public class SegmentSewerArch extends SegmentBase {
     Direction[] orthogonals = dir.orthogonals();
 
     Coord cursor = origin.copy();
-    cursor.up(3);
-    BlockType.COBBLESTONE_MOSSY.getBrush().stroke(editor, cursor, false, true);
-    cursor.up();
-    getPrimaryLiquid(theme).stroke(editor, cursor, false, true);
+    cursor.up(4);
+    generateSealedLiquidPocket(editor, level, theme, cursor);
+    cursor.down();
+    BlockType.COBBLESTONE_MOSSY.getBrush().stroke(editor, cursor, true, true);
 
     cursor = origin.copy();
     cursor.translate(dir, 2);
@@ -39,15 +38,7 @@ public class SegmentSewerArch extends SegmentBase {
     cursor.up();
     getSecondaryBars(theme).stroke(editor, cursor);
 
-    Coord start = origin.copy();
-    start.down();
-    Coord end = start.copy();
-    start.translate(orthogonals[0]);
-    end.translate(orthogonals[1]);
-    SingleBlockBrush.AIR.fill(editor, RectSolid.newRect(start, end));
-    start.down();
-    end.down();
-    getPrimaryLiquid(theme).fill(editor, RectSolid.newRect(start, end));
+    generateSealedSewerTrough(editor, level, theme, origin, dir);
 
     for (Direction o : orthogonals) {
       cursor = origin.copy();

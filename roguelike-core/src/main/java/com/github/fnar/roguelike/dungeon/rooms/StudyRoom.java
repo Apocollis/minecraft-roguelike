@@ -65,10 +65,10 @@ public class StudyRoom extends BaseRoom {
       generateThaumcraftTables(deskCenter, entrance);
     } else {
       generateOakDesk(deskCenter, back);
+      TorchBlock.torch().stroke(worldEditor, deskCenter.copy().translate(entrance.left()).up());
     }
 
     generateCarpet(deskCenter, entrance);
-    TorchBlock.torch().stroke(worldEditor, deskCenter.copy().translate(entrance.left()).up());
   }
 
   private boolean isThaumcraftLoaded() {
@@ -76,11 +76,16 @@ public class StudyRoom extends BaseRoom {
     return modLoader != null && modLoader.isModLoaded("thaumcraft");
   }
 
-  private void generateThaumcraftTables(Coord deskCenter, Direction facing) {
-    Coord researchTable = deskCenter.copy().translate(facing.left());
-    namedBlock("thaumcraft:research_table", horizontalMeta(facing)).stroke(worldEditor, researchTable);
-    namedBlock("thaumcraft:arcane_workbench", horizontalMeta(facing))
-        .stroke(worldEditor, deskCenter.copy().translate(facing.right()));
+  private void generateThaumcraftTables(Coord deskCenter, Direction entrance) {
+    // DUNSWE meta; reverse so the model front faces the doorway.
+    int frontMeta = deviceFacingMeta(entrance.reverse());
+    Coord researchTable = deskCenter.copy().translate(entrance.left());
+    Coord woodTable = deskCenter.copy().translate(entrance.right());
+
+    namedBlock("thaumcraft:research_table", frontMeta).stroke(worldEditor, researchTable);
+    namedBlock("thaumcraft:arcane_workbench", frontMeta).stroke(worldEditor, deskCenter);
+    namedBlock("thaumcraft:table_wood", frontMeta).stroke(worldEditor, woodTable);
+    namedBlock("thaumcraft:jar_brain", 0).stroke(worldEditor, woodTable.copy().up());
 
     worldEditor.setItem(researchTable, 0, new StringlyNamedItem("thaumcraft:scribing_tools").asStack());
     worldEditor.setItem(researchTable, 1, new StringlyNamedItem("minecraft:paper").asStack().withCount(64));
@@ -92,16 +97,20 @@ public class StudyRoom extends BaseRoom {
     carpet().setColor(DyeColor.PURPLE).fill(worldEditor, RectSolid.newRect(start, end));
   }
 
-  private static int horizontalMeta(Direction facing) {
+  private static int deviceFacingMeta(Direction facing) {
     switch (facing) {
-      case SOUTH:
+      case DOWN:
         return 0;
-      case WEST:
+      case UP:
         return 1;
       case NORTH:
         return 2;
-      default:
+      case SOUTH:
         return 3;
+      case WEST:
+        return 4;
+      default:
+        return 5;
     }
   }
 

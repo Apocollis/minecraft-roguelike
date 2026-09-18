@@ -22,7 +22,7 @@ public class SegmentPrisonCell extends SegmentBase {
 
     SecretsSetting secrets = level.getSettings().getSecrets();
     Optional<BaseRoom> room = generateSecret(secrets, editor, level.getSettings(), dir, origin.copy());
-    generateSealedAlcove(editor, theme, origin, dir);
+    generateSealedAlcove(editor, level, theme, origin, dir);
 
     Coord cursor = origin.copy().translate(dir, 2).up(2);
     for (Direction d : orthogonal) {

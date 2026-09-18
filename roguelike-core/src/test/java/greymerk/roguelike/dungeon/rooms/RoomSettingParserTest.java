@@ -10,7 +10,9 @@ import greymerk.roguelike.treasure.loot.ChestType;
 
 import com.github.fnar.roguelike.dungeon.rooms.BunkerRoom;
 import com.github.fnar.roguelike.dungeon.rooms.DimensionPortalRoom;
+import com.github.fnar.roguelike.dungeon.rooms.EmberSmelteryRoom;
 import com.github.fnar.roguelike.dungeon.rooms.StudyRoom;
+import com.github.fnar.roguelike.dungeon.rooms.WaystoneRoom;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -33,6 +35,21 @@ public class RoomSettingParserTest {
   }
 
   @Test
+  public void parse_CanParseWaystoneRoomType() {
+    String roomSettingJson = "{\n" +
+        "  \"type\": \"WAYSTONE\",\n" +
+        "  \"frequency\": \"SINGLE\",\n" +
+        "  \"level\": [0]\n" +
+        "}";
+
+    RoomSetting setting = parseRoomSetting(roomSettingJson);
+    assertThat(setting.getRoomType()).isEqualTo(RoomType.WAYSTONE);
+    assertThat(setting.isSingle()).isTrue();
+    assertThat(setting.isOnFloorLevel(0)).isTrue();
+    assertThat(setting.instantiate(null, null)).isInstanceOf(WaystoneRoom.class);
+  }
+
+  @Test
   public void parse_CanParseDimensionPortalRoomTypes() {
     String[] types = {"NETHER_PORTAL", "ATUM_PORTAL", "AETHER_PORTAL", "TWILIGHT_PORTAL", "BENEATH_PORTAL"};
     for (String type : types) {
@@ -45,6 +62,24 @@ public class RoomSettingParserTest {
       assertThat(setting.isSingle()).isTrue();
       assertThat(setting.instantiate(null, null)).isInstanceOf(DimensionPortalRoom.class);
     }
+  }
+
+  @Test
+  public void parse_CanParseEmberSmelteryRoomType() {
+    String roomSettingJson = "{\n" +
+        "  \"type\": \"EMBER_SMELTERY\",\n" +
+        "  \"frequency\": \"SINGLE\",\n" +
+        "  \"level\": [6, 7]\n" +
+        "}";
+
+    RoomSetting setting = parseRoomSetting(roomSettingJson);
+    assertThat(setting.getRoomType()).isEqualTo(RoomType.EMBER_SMELTERY);
+    assertThat(setting.getRoomType().isIntersection()).isFalse();
+    assertThat(setting.isSingle()).isTrue();
+    assertThat(setting.isOnFloorLevel(6)).isTrue();
+    assertThat(setting.isOnFloorLevel(7)).isTrue();
+    assertThat(setting.isOnFloorLevel(5)).isFalse();
+    assertThat(setting.instantiate(null, null)).isInstanceOf(EmberSmelteryRoom.class);
   }
 
   @Test

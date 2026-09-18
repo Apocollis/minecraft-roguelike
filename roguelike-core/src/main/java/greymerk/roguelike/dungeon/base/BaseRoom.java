@@ -158,6 +158,10 @@ public abstract class BaseRoom {
     return primaryTheme().getPillar();
   }
 
+  protected BlockBrush primaryPortalWallBrush() {
+    return primaryTheme().getPortalWall();
+  }
+
   protected StairsBlock primaryStairBrush() {
     return primaryTheme().getStair();
   }

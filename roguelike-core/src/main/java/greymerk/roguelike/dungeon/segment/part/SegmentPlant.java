@@ -13,7 +13,7 @@ public class SegmentPlant extends SegmentBase {
   @Override
   protected void genWall(WorldEditor editor, DungeonLevel level, Direction dir, Theme theme, Coord origin) {
 
-    generateSealedAlcove(editor, theme, origin, dir);
+    generateSealedAlcove(editor, level, theme, origin, dir);
 
     Coord cursor = origin.copy().translate(dir, 2).up(2);
     for (Direction d : dir.orthogonals()) {
