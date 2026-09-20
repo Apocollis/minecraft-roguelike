@@ -687,6 +687,41 @@ public class WorldEditor1_12 implements WorldEditor {
     tile.markDirty();
   }
 
+  @Override
+  public void setBotaniaPoolMana(Coord coord, int mana) {
+    if (world == null || world.isRemote || coord == null) {
+      return;
+    }
+    TileEntity tile = getTileEntity(coord);
+    if (tile == null) {
+      return;
+    }
+    NBTTagCompound nbt = tile.writeToNBT(new NBTTagCompound());
+    nbt.setInteger("mana", mana);
+    tile.readFromNBT(nbt);
+    tile.markDirty();
+  }
+
+  @Override
+  public void setBotaniaSpecialFlower(Coord coord, String subTileName) {
+    if (world == null || world.isRemote || coord == null || subTileName == null || subTileName.isEmpty()) {
+      return;
+    }
+    TileEntity tile = getTileEntity(coord);
+    if (tile == null) {
+      return;
+    }
+    NBTTagCompound nbt = tile.writeToNBT(new NBTTagCompound());
+    nbt.setString("subTileName", subTileName);
+    if (!nbt.hasKey("subTileCmp")) {
+      nbt.setTag("subTileCmp", new NBTTagCompound());
+    }
+    NBTTagCompound sub = nbt.getCompoundTag("subTileCmp");
+    sub.setInteger("collectorY", -1);
+    tile.readFromNBT(nbt);
+    tile.markDirty();
+  }
+
   public Biome getBiomeAt(Coord coord) {
     return world.getBiome(BlockPosMapper1_12.map(coord));
   }

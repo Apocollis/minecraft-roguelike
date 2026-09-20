@@ -1,5 +1,6 @@
 package greymerk.roguelike.dungeon.rooms;
 
+import com.github.fnar.roguelike.dungeon.rooms.BotaniaGroveRoom;
 import com.github.fnar.roguelike.dungeon.rooms.BunkerRoom;
 import com.github.fnar.roguelike.dungeon.rooms.EmberSmelteryRoom;
 import com.github.fnar.roguelike.dungeon.rooms.FountainRoom;
@@ -114,6 +115,8 @@ public class RoomSetting {
         return new BedRoomRoom(this, levelSettings, worldEditor);
       case BLAZE:
         return new BlazeRoom(this, levelSettings, worldEditor);
+      case BOTANIA_GROVE:
+        return new BotaniaGroveRoom(this, levelSettings, worldEditor);
       case BTEAM:
         return new BTeamRoom(this, levelSettings, worldEditor);
       case BUNKER:

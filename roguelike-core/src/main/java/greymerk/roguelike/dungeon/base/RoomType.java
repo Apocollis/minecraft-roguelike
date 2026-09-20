@@ -22,6 +22,7 @@ public enum RoomType {
   BEDROOM(false, true),
   BENEATH_PORTAL(false, false),
   BLAZE(true, false),
+  BOTANIA_GROVE(false, false),
   BRICK(true, false),
   BTEAM(false, true),
   BUNKER(true, false),

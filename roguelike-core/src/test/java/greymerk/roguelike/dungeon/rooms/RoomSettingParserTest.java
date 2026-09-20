@@ -8,6 +8,7 @@ import org.junit.Test;
 import greymerk.roguelike.dungeon.base.RoomType;
 import greymerk.roguelike.treasure.loot.ChestType;
 
+import com.github.fnar.roguelike.dungeon.rooms.BotaniaGroveRoom;
 import com.github.fnar.roguelike.dungeon.rooms.BunkerRoom;
 import com.github.fnar.roguelike.dungeon.rooms.DimensionPortalRoom;
 import com.github.fnar.roguelike.dungeon.rooms.EmberSmelteryRoom;
@@ -62,6 +63,21 @@ public class RoomSettingParserTest {
       assertThat(setting.isSingle()).isTrue();
       assertThat(setting.instantiate(null, null)).isInstanceOf(DimensionPortalRoom.class);
     }
+  }
+
+  @Test
+  public void parse_CanParseBotaniaGroveRoomType() {
+    String roomSettingJson = "{\n" +
+        "  \"type\": \"BOTANIA_GROVE\",\n" +
+        "  \"frequency\": \"SINGLE\",\n" +
+        "  \"level\": [0]\n" +
+        "}";
+
+    RoomSetting setting = parseRoomSetting(roomSettingJson);
+    assertThat(setting.getRoomType()).isEqualTo(RoomType.BOTANIA_GROVE);
+    assertThat(setting.getRoomType().isIntersection()).isFalse();
+    assertThat(setting.isSingle()).isTrue();
+    assertThat(setting.instantiate(null, null)).isInstanceOf(BotaniaGroveRoom.class);
   }
 
   @Test

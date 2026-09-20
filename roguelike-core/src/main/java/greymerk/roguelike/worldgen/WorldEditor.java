@@ -170,6 +170,14 @@ public interface WorldEditor {
   ) {
   }
 
+  /** Sets mana on a Botania mana pool tile. No-op if the tile is missing. */
+  default void setBotaniaPoolMana(Coord coord, int mana) {
+  }
+
+  /** Sets a Botania special flower subtile (e.g. {@code gourmaryllis}). */
+  default void setBotaniaSpecialFlower(Coord coord, String subTileName) {
+  }
+
   default boolean hasQueuedDungeonInChunk(int chunkX, int chunkZ) {
     return false;
   }
