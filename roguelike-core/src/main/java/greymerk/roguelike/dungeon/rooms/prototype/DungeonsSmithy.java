@@ -53,7 +53,27 @@ public class DungeonsSmithy extends BaseRoom {
     cursor.up();
     SingleBlockBrush.AIR.stroke(worldEditor, cursor);
 
+    sealFeatureSideWalls(entranceDirection, origin);
     mainRoom(entranceDirection, origin);
+    generateDoorways(origin, longAxisEntrances(entranceDirection, entrances));
+  }
+
+  private static List<Direction> longAxisEntrances(Direction entranceDirection, List<Direction> entrances) {
+    return entrances.stream()
+        .filter(direction -> direction == entranceDirection || direction == entranceDirection.reverse())
+        .collect(Collectors.toList());
+  }
+
+  private void sealFeatureSideWalls(Direction entranceDirection, Coord origin) {
+    for (Direction side : entranceDirection.orthogonals()) {
+      Coord start = origin.copy().down();
+      start.translate(side, 6);
+      start.translate(entranceDirection.reverse(), 4);
+      Coord end = origin.copy().up(4);
+      end.translate(side, 6);
+      end.translate(entranceDirection, 4);
+      primaryWallBrush().fill(worldEditor, RectSolid.newRect(start, end), true, true);
+    }
   }
 
   private void sideRoom(Direction entranceDirection, Coord origin) {

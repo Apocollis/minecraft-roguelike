@@ -87,23 +87,23 @@ class BlockSetParser {
       return empty();
     }
     JsonObject liquid = json.get("liquid").getAsJsonObject();
-    rewriteVanillaLavaToFlowing(liquid);
+    rewriteVanillaLavaToStillSource(liquid);
     return ofNullable(BlockProvider.create(liquid));
   }
 
   /**
-   * Vanilla level-0 lava becomes still on the first liquid tick. Theme liquid
-   * should stay {@code flowing_lava} meta 8 (falling / full). Custom liquids
-   * are left unchanged.
+   * Vanilla {@code lava} / {@code flowing_lava} in theme JSON should place a
+   * still source (meta 0). Flowing meta 8 is falling lava and drains out of
+   * wells. Custom liquids are left unchanged.
    */
-  static void rewriteVanillaLavaToFlowing(JsonElement element) {
+  static void rewriteVanillaLavaToStillSource(JsonElement element) {
     if (element == null || element.isJsonNull()) {
       return;
     }
     if (element.isJsonArray()) {
       JsonArray array = element.getAsJsonArray();
       for (JsonElement child : array) {
-        rewriteVanillaLavaToFlowing(child);
+        rewriteVanillaLavaToStillSource(child);
       }
       return;
     }
@@ -113,15 +113,15 @@ class BlockSetParser {
     JsonObject object = element.getAsJsonObject();
     if (object.has("name") && object.get("name").isJsonPrimitive()) {
       if (isVanillaLavaBlock(object.get("name").getAsString())) {
-        object.addProperty("name", "minecraft:flowing_lava");
-        object.addProperty("meta", 8);
+        object.addProperty("name", "minecraft:lava");
+        object.addProperty("meta", 0);
       }
     }
     for (Map.Entry<String, JsonElement> entry : object.entrySet()) {
       if ("name".equals(entry.getKey())) {
         continue;
       }
-      rewriteVanillaLavaToFlowing(entry.getValue());
+      rewriteVanillaLavaToStillSource(entry.getValue());
     }
   }
 

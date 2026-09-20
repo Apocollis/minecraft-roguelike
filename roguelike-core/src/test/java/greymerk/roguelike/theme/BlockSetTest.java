@@ -114,7 +114,7 @@ public class BlockSetTest {
   }
 
   @Test
-  public void jsonLavaLiquidBecomesFlowingMeta8() {
+  public void jsonLavaLiquidBecomesStillSource() {
     JsonObject json = new JsonObject();
     JsonObject liquid = new JsonObject();
     liquid.addProperty("name", "minecraft:lava");
@@ -124,8 +124,8 @@ public class BlockSetTest {
 
     SingleBlockBrush liquidBrush = (SingleBlockBrush) test.getLiquid();
     assertThat(liquidBrush.getJson().getAsJsonObject().get("name").getAsString())
-        .isEqualTo("minecraft:flowing_lava");
-    assertThat(liquidBrush.getJson().getAsJsonObject().get("meta").getAsInt()).isEqualTo(8);
+        .isEqualTo("minecraft:lava");
+    assertThat(liquidBrush.getJson().getAsJsonObject().get("meta").getAsInt()).isEqualTo(0);
   }
 
   @Test

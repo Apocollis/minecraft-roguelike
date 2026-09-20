@@ -25,6 +25,7 @@ import greymerk.roguelike.worldgen.WorldEditor;
 import greymerk.roguelike.worldgen.shapes.RectSolid;
 
 import static com.github.fnar.minecraft.block.BlockType.LAVA_FLOWING;
+import static com.github.fnar.minecraft.block.BlockType.LAVA_STILL;
 import static greymerk.roguelike.worldgen.Direction.CARDINAL;
 import static greymerk.roguelike.worldgen.Direction.UP;
 
@@ -89,7 +90,8 @@ public class NetherFortressRoom extends BaseRoom {
 
   private boolean isHotGarden() {
     SingleBlockBrush liquid = (SingleBlockBrush) primaryLiquidBrush();
-    boolean isBlockTypeLava = liquid.getBlockType() != null && liquid.getBlockType().equals(LAVA_FLOWING);
+    boolean isBlockTypeLava = liquid.getBlockType() != null
+        && (liquid.getBlockType().equals(LAVA_FLOWING) || liquid.getBlockType().equals(LAVA_STILL));
     boolean hasJsonLava = liquid.getJson() != null && liquid.getJson().toString().toLowerCase().contains("lava");
     return isBlockTypeLava || hasJsonLava;
   }

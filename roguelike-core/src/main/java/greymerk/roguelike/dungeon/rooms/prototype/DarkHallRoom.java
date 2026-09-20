@@ -55,10 +55,11 @@ public class DarkHallRoom extends BaseRoom {
 
       secondaryPillarBrush().stroke(worldEditor, at.copy().translate(side, 3).up(7));
 
+      boolean skipWallPillars = skipEntranceWallPillars() && entrances.contains(side);
       if (!entrances.contains(side)) {
         pillar(side.reverse(), at.copy().translate(side, 6));
       } else {
-        generateEntranceArchway(at.copy().translate(side, 7), side);
+        generateEntranceArchway(at.copy().translate(side, 7), side, skipWallPillars);
       }
 
       secondaryWallBrush().fill(worldEditor, RectSolid.newRect(
@@ -67,7 +68,9 @@ public class DarkHallRoom extends BaseRoom {
 
       for (Direction orthogonal : side.orthogonals()) {
         Coord cursor = at.copy().translate(side, 6).translate(orthogonal, 3);
-        pillar(side.reverse(), cursor);
+        if (!skipWallPillars) {
+          pillar(side.reverse(), cursor);
+        }
         secondaryWallBrush().fill(worldEditor, RectSolid.newRect(
             cursor.copy().up(6),
             cursor.copy().up(6).translate(side.reverse(), 6)));
@@ -79,7 +82,11 @@ public class DarkHallRoom extends BaseRoom {
     return this;
   }
 
-  private void generateEntranceArchway(Coord origin, Direction facing) {
+  protected boolean skipEntranceWallPillars() {
+    return false;
+  }
+
+  private void generateEntranceArchway(Coord origin, Direction facing, boolean skipJambPillars) {
     Coord aboveOrigin = origin.copy().up(2);
 
     secondaryWallBrush().fill(worldEditor, RectSolid.newRect(
@@ -90,7 +97,9 @@ public class DarkHallRoom extends BaseRoom {
 
     for (Direction orthogonal : facing.orthogonals()) {
       secondaryStairBrush().setUpsideDown(true).setFacing(orthogonal.reverse()).stroke(worldEditor, aboveOrigin.copy().translate(orthogonal));
-      pillar(orthogonal.reverse(), origin.copy().translate(facing.back()).translate(orthogonal, 3));
+      if (!skipJambPillars) {
+        pillar(orthogonal.reverse(), origin.copy().translate(facing.back()).translate(orthogonal, 3));
+      }
       Coord cursor = origin.copy().translate(orthogonal, 2);
       secondaryPillarBrush().stroke(worldEditor, cursor);
       secondaryPillarBrush().stroke(worldEditor, cursor.up());

@@ -36,13 +36,18 @@ public class EmberSmelteryRoom extends DarkHallRoom {
   @Override
   public BaseRoom generate(Coord at, List<Direction> entrances) {
     super.generate(at, entrances);
-    generateOverlay(at);
+    generateOverlay(at, entrances);
     return this;
   }
 
-  private void generateOverlay(Coord origin) {
+  @Override
+  protected boolean skipEntranceWallPillars() {
+    return true;
+  }
+
+  private void generateOverlay(Coord origin, List<Direction> entrances) {
     for (OverlayBlock block : BLOCKS) {
-      if (!isOverlayModLoaded(block.name)) {
+      if (!isOverlayModLoaded(block.name) || isInEntranceDoorway(block.dx, block.dz, entrances)) {
         continue;
       }
       namedBlock(block.name, block.meta).stroke(worldEditor, origin.copy().translate(block.dx, block.dy, block.dz));
@@ -51,6 +56,9 @@ public class EmberSmelteryRoom extends DarkHallRoom {
       return;
     }
     for (OverlayConnection connection : CONNECTIONS) {
+      if (isInEntranceDoorway(connection.dx, connection.dz, entrances)) {
+        continue;
+      }
       worldEditor.mergeTileEntityPipeConnections(
           origin.copy().translate(connection.dx, connection.dy, connection.dz),
           connection.north,
@@ -68,6 +76,37 @@ public class EmberSmelteryRoom extends DarkHallRoom {
       return true;
     }
     return isModLoaded(blockName.substring(0, colon));
+  }
+
+  private static boolean isInEntranceDoorway(int dx, int dz, List<Direction> entrances) {
+    for (Direction entrance : entrances) {
+      int along;
+      int across;
+      switch (entrance) {
+        case NORTH:
+          along = -dz;
+          across = dx;
+          break;
+        case SOUTH:
+          along = dz;
+          across = dx;
+          break;
+        case WEST:
+          along = -dx;
+          across = dz;
+          break;
+        case EAST:
+          along = dx;
+          across = dz;
+          break;
+        default:
+          continue;
+      }
+      if (along >= 5 && along <= 7 && Math.abs(across) <= 1) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private boolean isModLoaded(String modId) {
