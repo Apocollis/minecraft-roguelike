@@ -14,6 +14,8 @@ import java.util.Locale;
 
 /**
  * Persistent dungeon AABBs for {@code isInsideStructure("RoguelikeDungeon")} and {@code /whereami}.
+ * Stored with {@link World#getPerWorldStorage()} so each dimension has its own list.
+ * {@link World#getMapStorage()} is the overworld store for every {@code WorldServerMulti}.
  */
 public class RoguelikeDungeonSavedData extends WorldSavedData {
 
@@ -30,7 +32,7 @@ public class RoguelikeDungeonSavedData extends WorldSavedData {
   }
 
   public static RoguelikeDungeonSavedData get(World world) {
-    MapStorage storage = world.getMapStorage();
+    MapStorage storage = world.getPerWorldStorage();
     RoguelikeDungeonSavedData instance = (RoguelikeDungeonSavedData) storage
         .getOrLoadData(RoguelikeDungeonSavedData.class, DATA_NAME);
     if (instance == null) {

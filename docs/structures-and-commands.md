@@ -2,7 +2,7 @@
 
 ## Saved boxes
 
-Key: **`roguelike_dungeon_boxes`** (`RoguelikeDungeonSavedData`). Not Tweaks’ `aqtweaks_roguelike_dungeons`.
+Key: **`roguelike_dungeon_boxes`** (`RoguelikeDungeonSavedData`), in that dimension’s `getPerWorldStorage()` (`data/` for the overworld, `DIM<id>/data/` otherwise). Not Tweaks’ `aqtweaks_roguelike_dungeons`. `getMapStorage()` is shared with the overworld, so it is not used.
 
 Written only when a dungeon **finishes**. Log line:
 

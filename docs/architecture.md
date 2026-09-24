@@ -185,7 +185,7 @@ Rooms are `RoomType` → `RoomSetting` → `BaseRoom` subclass. Flags: intersect
 
 ## 7. Structure integration (vanilla API)
 
-Finished dungeons persist AABBs in world storage key **`roguelike_dungeon_boxes`**.
+Finished dungeons persist AABBs in that dimension’s world storage key **`roguelike_dungeon_boxes`**.
 
 ```mermaid
 flowchart LR
@@ -227,7 +227,7 @@ Do not lower `/roguelike locate` to 2. Vanilla `/locate` is the public locate.
 |-------|------------|--------|
 | `config/roguelike_dungeons/roguelike.cfg` | spawn, grid, distances | `RogueConfig` |
 | `config/roguelike_dungeons/*.json` | dungeon settings | `SettingsContainer` |
-| World `MapStorage` | `roguelike_dungeon_boxes` | `RoguelikeDungeonSavedData` |
+| Per-dimension `getPerWorldStorage()` | `roguelike_dungeon_boxes` | `RoguelikeDungeonSavedData` |
 
 Existing cfg **string lists are not merged** when Java defaults change. Devbox values often differ from code defaults ([config.md](config.md)).
 

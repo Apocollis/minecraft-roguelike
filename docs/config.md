@@ -25,7 +25,7 @@ Code defaults live in `RogueConfig`. **Devbox often overrides them.** Missing ke
 
 ## WorldSavedData
 
-- Roguelike: `roguelike_dungeon_boxes`
+- Roguelike: `roguelike_dungeon_boxes` (per dimension, via `getPerWorldStorage()`)
 - Tweaks (legacy): `aqtweaks_roguelike_dungeons`
 
 Do not share those names.
