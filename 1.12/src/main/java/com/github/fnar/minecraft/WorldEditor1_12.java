@@ -57,6 +57,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -736,18 +737,31 @@ public class WorldEditor1_12 implements WorldEditor {
     if (world == null || world.isRemote || coord == null || key == null || value == null) {
       return;
     }
+    BlockPos pos = BlockPosMapper1_12.map(coord);
     TileEntity tile = getTileEntity(coord);
     if (tile == null) {
-      return;
+      IBlockState state = world.getBlockState(pos);
+      Block block = state.getBlock();
+      if (!block.hasTileEntity(state)) {
+        return;
+      }
+      tile = block.createTileEntity(world, state);
+      if (tile == null) {
+        return;
+      }
+      world.setTileEntity(pos, tile);
     }
+    // Bewitchment's statue tile writes `name` in writeToNBT. A null name throws,
+    // so the field has to be set before any NBT round-trip or the client renderer crashes.
+    assignStringField(tile, key, value);
     NBTTagCompound nbt = new NBTTagCompound();
     try {
       tile.writeToNBT(nbt);
     } catch (RuntimeException ignored) {
-      // A fresh tile can reject a null string field while writing itself out.
+      nbt.setString(key, value);
+      tile.readFromNBT(nbt);
+      assignStringField(tile, key, value);
     }
-    nbt.setString(key, value);
-    tile.readFromNBT(nbt);
     syncTile(coord, tile);
   }
 
@@ -784,6 +798,25 @@ public class WorldEditor1_12 implements WorldEditor {
     nbt.setTag("inventory_" + inventoryIndex, handler);
     tile.readFromNBT(nbt);
     syncTile(coord, tile);
+  }
+
+  private static void assignStringField(TileEntity tile, String key, String value) {
+    Class<?> type = tile.getClass();
+    while (type != null && type != Object.class) {
+      try {
+        Field field = type.getDeclaredField(key);
+        if (field.getType() != String.class) {
+          return;
+        }
+        field.setAccessible(true);
+        field.set(tile, value);
+        return;
+      } catch (NoSuchFieldException ignored) {
+        type = type.getSuperclass();
+      } catch (IllegalAccessException ignored) {
+        return;
+      }
+    }
   }
 
   private void syncTile(Coord coord, TileEntity tile) {
