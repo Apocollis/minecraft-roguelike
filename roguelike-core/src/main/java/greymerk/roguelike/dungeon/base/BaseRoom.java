@@ -1,5 +1,7 @@
 package greymerk.roguelike.dungeon.base;
 
+import com.github.fnar.minecraft.block.BlockType;
+import com.github.fnar.minecraft.block.SingleBlockBrush;
 import com.github.fnar.minecraft.block.normal.StairsBlock;
 import com.github.fnar.minecraft.block.spawner.MobType;
 import com.github.fnar.minecraft.block.spawner.Spawner;
@@ -123,11 +125,68 @@ public abstract class BaseRoom {
     return getRoomSetting().getChestType().orElse(defaultChestType);
   }
 
-  protected void theFloorIsLava(Coord origin) {
-    primaryLiquidBrush().fill(worldEditor, RectSolid.newRect(
-        origin.copy().north(getWallDist()).west(getWallDist()).down(),
-        origin.copy().south(getWallDist()).east(getWallDist()).down(depth)
+  public boolean prefersMultipleEntrances() {
+    return getRoomSetting().getRoomType().prefersMultipleEntrances();
+  }
+
+  public boolean requiresSingleEntrance() {
+    return getRoomSetting().getRoomType().requiresSingleEntrance();
+  }
+
+  /**
+   * Floor and wall ring through cave air so theme liquid cannot spill out of an open cave.
+   * {@code rimTopOffset} is how far below the room origin the rim stops (1 = one block down).
+   */
+  protected void sealLiquidBasin(Coord origin, int rimTopOffset) {
+    int radius = getWallDist();
+    int bottomOffset = getDepth();
+    primaryFloorBrush().fill(worldEditor, RectSolid.newRect(
+        origin.copy().translate(-radius, -bottomOffset, -radius),
+        origin.copy().translate(radius, -bottomOffset, radius)
     ), true, false);
+
+    BlockBrush wall = primaryWallBrush();
+    wall.fill(worldEditor, RectSolid.newRect(
+        origin.copy().translate(-radius, -bottomOffset, -radius),
+        origin.copy().translate(radius, -rimTopOffset, -radius)
+    ), true, true);
+    wall.fill(worldEditor, RectSolid.newRect(
+        origin.copy().translate(-radius, -bottomOffset, radius),
+        origin.copy().translate(radius, -rimTopOffset, radius)
+    ), true, true);
+    wall.fill(worldEditor, RectSolid.newRect(
+        origin.copy().translate(-radius, -bottomOffset, -(radius - 1)),
+        origin.copy().translate(-radius, -rimTopOffset, radius - 1)
+    ), true, true);
+    wall.fill(worldEditor, RectSolid.newRect(
+        origin.copy().translate(radius, -bottomOffset, -(radius - 1)),
+        origin.copy().translate(radius, -rimTopOffset, radius - 1)
+    ), true, true);
+  }
+
+  protected void fillBasinLiquid(Coord origin, int bottomOffset, int topOffset) {
+    int radius = getWallDist() - 1;
+    if (radius < 0) {
+      return;
+    }
+    stillLiquidBrush().fill(worldEditor, RectSolid.newRect(
+        origin.copy().translate(-radius, -bottomOffset, -radius),
+        origin.copy().translate(radius, -topOffset, radius)
+    ), true, false);
+  }
+
+  protected BlockBrush stillLiquidBrush() {
+    BlockBrush liquid = primaryLiquidBrush();
+    if (liquid instanceof SingleBlockBrush) {
+      BlockType type = ((SingleBlockBrush) liquid).getBlockType();
+      if (type == BlockType.LAVA_FLOWING) {
+        return BlockType.LAVA_STILL.getBrush();
+      }
+      if (type == BlockType.WATER_FLOWING) {
+        return BlockType.WATER_STILL.getBrush();
+      }
+    }
+    return liquid;
   }
 
   protected Theme theme() {

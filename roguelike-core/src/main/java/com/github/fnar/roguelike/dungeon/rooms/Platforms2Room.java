@@ -2,7 +2,6 @@ package com.github.fnar.roguelike.dungeon.rooms;
 
 import com.github.fnar.roguelike.worldgen.generatables.Generatable;
 import com.github.fnar.roguelike.worldgen.generatables.Pillar;
-import com.github.fnar.roguelike.worldgen.generatables.Staircase3x3;
 
 import java.util.List;
 
@@ -25,17 +24,14 @@ public class Platforms2Room extends BaseRoom {
   @Override
   protected void generateDecorations(Coord at, List<Direction> entrances) {
     Coord floorLevel = at.copy().down(depth - 1);
+    int liquidHeight = 1 + random().nextInt(2);
+    int bottomOffset = depth - 1;
+    int topOffset = bottomOffset - liquidHeight + 1;
 
+    sealLiquidBasin(at, topOffset);
     generate3x3Platforms(floorLevel);
-
-    for (Direction cardinal : Direction.cardinals()) {
-      Direction side = random().nextBoolean() ? cardinal.left() : cardinal.right();
-      generate3x3Staircase(floorLevel.copy().down().translate(cardinal, 6).translate(side, 3), side);
-    }
-
     generatePillars(at, entrances);
-
-    fillWithLiquid(floorLevel.copy());
+    fillBasinLiquid(at, bottomOffset, topOffset);
   }
 
 
@@ -62,10 +58,6 @@ public class Platforms2Room extends BaseRoom {
     }
   }
 
-  private void generate3x3Staircase(Coord at, Direction facing) {
-    Staircase3x3.newStaircase(worldEditor).withTheme(theme()).withFacing(facing).generate(at);
-  }
-
   private void generatePillars(Coord at, List<Direction> entrances) {
     generateCardinalPillars(at, entrances);
     generateCornerPillars(at);
@@ -89,10 +81,6 @@ public class Platforms2Room extends BaseRoom {
 
   private Pillar pillar() {
     return Pillar.newPillar(worldEditor).withHeight(getCeilingHeight()).withPillar(secondaryPillarBrush()).withStairs(secondaryStairBrush());
-  }
-
-  private void fillWithLiquid(Coord at) {
-    primaryLiquidBrush().fill(worldEditor, at.newRect(getWallDist()).withHeight(1 + random().nextInt(2)), true, false);
   }
 
 }

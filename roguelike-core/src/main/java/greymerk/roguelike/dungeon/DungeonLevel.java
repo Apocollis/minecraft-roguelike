@@ -73,11 +73,28 @@ public class DungeonLevel {
   private void assignRooms(WorldEditor editor) {
     RoomIterator roomIterator = new RoomIterator(settings, editor);
     int count = 0;
+    int singleEntranceSkips = 0;
     while (layout.hasEmptyRooms()) {
-      BaseRoom toGenerate = count < settings.getNumRooms()
+      boolean budgetLeft = count < settings.getNumRooms();
+      BaseRoom toGenerate = budgetLeft
           ? roomIterator.getDungeonRoom()
           : RoomType.CORNER.newSingleRoomSetting().instantiate(settings, editor);
       DungeonNode node = layout.getBestFit(toGenerate);
+      if (node == null) {
+        singleEntranceSkips++;
+        if (singleEntranceSkips > 16) {
+          toGenerate = RoomType.CORNER.newSingleRoomSetting().instantiate(settings, editor);
+          node = layout.getBestFit(toGenerate);
+          if (node == null) {
+            break;
+          }
+          node.setDungeon(toGenerate);
+          ++count;
+          singleEntranceSkips = 0;
+        }
+        continue;
+      }
+      singleEntranceSkips = 0;
       node.setDungeon(toGenerate);
       ++count;
     }

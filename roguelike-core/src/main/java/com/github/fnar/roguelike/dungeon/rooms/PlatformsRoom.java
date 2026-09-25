@@ -31,7 +31,8 @@ public class PlatformsRoom extends BaseRoom {
   public void generateDecorations(Coord origin, List<Direction> entrances) {
     Direction front = getEntrance(entrances);
     generateIslands(origin, front);
-    theFloorIsLava(origin);
+    sealLiquidBasin(origin, 1);
+    fillBasinLiquid(origin, Math.max(1, getDepth() - 1), 1);
     generateCeilingDecoration(origin);
   }
 

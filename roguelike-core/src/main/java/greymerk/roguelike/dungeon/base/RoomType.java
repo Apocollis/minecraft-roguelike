@@ -107,6 +107,14 @@ public enum RoomType {
         Optional.empty());
   }
 
+  public boolean prefersMultipleEntrances() {
+    return this == PLATFORMS || this == PLATFORMS_2;
+  }
+
+  public boolean requiresSingleEntrance() {
+    return this == STUDY;
+  }
+
   public static RoomType getRandomIntersection(Random random) {
     List<RoomType> intersections = getIntersections();
     return intersections.get(random.nextInt(intersections.size()));

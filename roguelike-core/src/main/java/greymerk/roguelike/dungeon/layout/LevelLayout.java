@@ -2,9 +2,11 @@ package greymerk.roguelike.dungeon.layout;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.stream.Stream;
 
 import greymerk.roguelike.dungeon.base.BaseRoom;
 import greymerk.roguelike.worldgen.Bounded;
@@ -88,16 +90,55 @@ public class LevelLayout {
   }
 
   public DungeonNode getBestFit(BaseRoom room) {
+    if (room.requiresSingleEntrance()) {
+      return findSingleEntranceNode(room).orElse(null);
+    }
+    if (room.prefersMultipleEntrances()) {
+      Optional<DungeonNode> intersection = findIntersectionNode(room);
+      if (intersection.isPresent()) {
+        return intersection.get();
+      }
+    }
     return findFirstNonOverlappingNode(room)
         .orElseGet(this::findFirstConnectingNode);
   }
 
+  private Optional<DungeonNode> findIntersectionNode(BaseRoom room) {
+    return emptyFittingNodes(room)
+        .filter(node -> entranceCount(node) >= 2)
+        .max(Comparator.comparingInt(this::entranceCount));
+  }
+
+  private Optional<DungeonNode> findSingleEntranceNode(BaseRoom room) {
+    Optional<DungeonNode> fitting = emptyFittingNodes(room)
+        .filter(node -> entranceCount(node) == 1)
+        .findFirst();
+    if (fitting.isPresent()) {
+      return fitting;
+    }
+    return emptyNodes()
+        .filter(node -> entranceCount(node) == 1)
+        .findFirst();
+  }
+
   private Optional<DungeonNode> findFirstNonOverlappingNode(BaseRoom room) {
+    return emptyFittingNodes(room).findFirst();
+  }
+
+  private Stream<DungeonNode> emptyFittingNodes(BaseRoom room) {
+    int size = room.getSize() + DungeonNode.ENCASING_SIZE;
+    return emptyNodes()
+        .filter(node -> !node.hasOverlappingNode(size, getNodes()));
+  }
+
+  private Stream<DungeonNode> emptyNodes() {
     return getNodes().stream()
         .filter(this::isNotEdgeNode)
-        .filter(DungeonNode::isNotYetGenerated)
-        .filter(node -> !node.hasOverlappingNode(room.getSize() + DungeonNode.ENCASING_SIZE, getNodes()))
-        .findFirst();
+        .filter(DungeonNode::isNotYetGenerated);
+  }
+
+  private int entranceCount(DungeonNode node) {
+    return (int) node.getEntrances().stream().distinct().count();
   }
 
   private DungeonNode findFirstConnectingNode() {
