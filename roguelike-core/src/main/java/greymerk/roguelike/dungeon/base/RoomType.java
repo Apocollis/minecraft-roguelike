@@ -65,7 +65,8 @@ public enum RoomType {
   STUDY(false, true),
   TREETHO(false, false),
   TWILIGHT_PORTAL(false, false),
-  WAYSTONE(false, false)
+  WAYSTONE(false, false),
+  WITCH_ALTAR(false, false)
   ;
 
   private final boolean isIntersection;

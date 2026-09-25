@@ -13,6 +13,7 @@ import com.github.fnar.roguelike.dungeon.rooms.BunkerRoom;
 import com.github.fnar.roguelike.dungeon.rooms.DimensionPortalRoom;
 import com.github.fnar.roguelike.dungeon.rooms.EmberSmelteryRoom;
 import com.github.fnar.roguelike.dungeon.rooms.StudyRoom;
+import com.github.fnar.roguelike.dungeon.rooms.WitchAltarRoom;
 import com.github.fnar.roguelike.dungeon.rooms.WaystoneRoom;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -78,6 +79,22 @@ public class RoomSettingParserTest {
     assertThat(setting.getRoomType().isIntersection()).isFalse();
     assertThat(setting.isSingle()).isTrue();
     assertThat(setting.instantiate(null, null)).isInstanceOf(BotaniaGroveRoom.class);
+  }
+
+  @Test
+  public void parse_CanParseWitchAltarRoomType() {
+    String roomSettingJson = "{\n" +
+        "  \"type\": \"WITCH_ALTAR\",\n" +
+        "  \"frequency\": \"SINGLE\",\n" +
+        "  \"level\": [0]\n" +
+        "}";
+
+    RoomSetting setting = parseRoomSetting(roomSettingJson);
+    assertThat(setting.getRoomType()).isEqualTo(RoomType.WITCH_ALTAR);
+    assertThat(setting.getRoomType().isIntersection()).isFalse();
+    assertThat(setting.getRoomType().isSecret()).isFalse();
+    assertThat(setting.isSingle()).isTrue();
+    assertThat(setting.instantiate(null, null)).isInstanceOf(WitchAltarRoom.class);
   }
 
   @Test

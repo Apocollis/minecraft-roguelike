@@ -48,6 +48,19 @@ public class EnikoRoom extends BaseRoom {
 
   @Override
   public BaseRoom generate(Coord at, List<Direction> entrances) {
+    generateShell(at, entrances);
+    generateSpawner(at, COMMON_MOBS);
+    Coord coord = generateChestLocation(at.copy().up());
+    new TreasureChest(coord, worldEditor)
+        .withChestType(getChestTypeOrUse(ChestType.chooseRandomAmong(random(), ChestType.COMMON_TREASURES)))
+        .withFacing(getEntrance(entrances))
+        .withTrap(false)
+        .stroke(worldEditor, coord);
+
+    return this;
+  }
+
+  protected void generateShell(Coord at, List<Direction> entrances) {
     Coord start = at.copy();
     Coord end = at.copy();
     start.translate(new Coord(6, -1, 6));
@@ -100,16 +113,6 @@ public class EnikoRoom extends BaseRoom {
         primaryFloorBrush().fill(worldEditor, RectSolid.newRect(start, end));
       }
     }
-
-    generateSpawner(at, COMMON_MOBS);
-    Coord coord = generateChestLocation(at.copy().up());
-    new TreasureChest(coord, worldEditor)
-        .withChestType(getChestTypeOrUse(ChestType.chooseRandomAmong(random(), ChestType.COMMON_TREASURES)))
-        .withFacing(getEntrance(entrances))
-        .withTrap(false)
-        .stroke(worldEditor, coord);
-
-    return this;
   }
 
   @Override

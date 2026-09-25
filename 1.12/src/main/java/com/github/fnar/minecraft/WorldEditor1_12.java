@@ -40,6 +40,7 @@ import net.minecraft.init.Blocks;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.network.play.server.SPacketChunkData;
 import net.minecraft.tileentity.*;
 import net.minecraft.util.ResourceLocation;
@@ -728,6 +729,68 @@ public class WorldEditor1_12 implements WorldEditor {
     sub.setInteger("collectorY", -1);
     tile.readFromNBT(nbt);
     tile.markDirty();
+  }
+
+  @Override
+  public void setTileEntityString(Coord coord, String key, String value) {
+    if (world == null || world.isRemote || coord == null || key == null || value == null) {
+      return;
+    }
+    TileEntity tile = getTileEntity(coord);
+    if (tile == null) {
+      return;
+    }
+    NBTTagCompound nbt = new NBTTagCompound();
+    try {
+      tile.writeToNBT(nbt);
+    } catch (RuntimeException ignored) {
+      // A fresh tile can reject a null string field while writing itself out.
+    }
+    nbt.setString(key, value);
+    tile.readFromNBT(nbt);
+    syncTile(coord, tile);
+  }
+
+  @Override
+  public void setItemHandlerStack(Coord coord, int inventoryIndex, RldItemStack itemStack) {
+    if (world == null || world.isRemote || coord == null || itemStack == null || inventoryIndex < 0) {
+      return;
+    }
+    TileEntity tile = getTileEntity(coord);
+    if (tile == null) {
+      return;
+    }
+    ItemStack forgeStack;
+    try {
+      forgeStack = new ItemMapper1_12().map(itemStack);
+    } catch (CouldNotMapItemException e) {
+      logger.error(e);
+      return;
+    }
+    if (forgeStack == null || forgeStack.isEmpty()) {
+      return;
+    }
+    NBTTagCompound itemTag = new NBTTagCompound();
+    forgeStack.writeToNBT(itemTag);
+    itemTag.setByte("Slot", (byte) 0);
+    NBTTagList items = new NBTTagList();
+    items.appendTag(itemTag);
+    NBTTagCompound handler = new NBTTagCompound();
+    handler.setInteger("Size", 1);
+    handler.setTag("Items", items);
+
+    NBTTagCompound nbt = new NBTTagCompound();
+    tile.writeToNBT(nbt);
+    nbt.setTag("inventory_" + inventoryIndex, handler);
+    tile.readFromNBT(nbt);
+    syncTile(coord, tile);
+  }
+
+  private void syncTile(Coord coord, TileEntity tile) {
+    tile.markDirty();
+    BlockPos pos = BlockPosMapper1_12.map(coord);
+    IBlockState state = world.getBlockState(pos);
+    world.notifyBlockUpdate(pos, state, state, 3);
   }
 
   public Biome getBiomeAt(Coord coord) {

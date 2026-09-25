@@ -6,6 +6,7 @@ import com.github.fnar.roguelike.dungeon.rooms.EmberSmelteryRoom;
 import com.github.fnar.roguelike.dungeon.rooms.FountainRoom;
 import com.github.fnar.roguelike.dungeon.rooms.DimensionPortalRoom;
 import com.github.fnar.roguelike.dungeon.rooms.StudyRoom;
+import com.github.fnar.roguelike.dungeon.rooms.WitchAltarRoom;
 import com.github.fnar.roguelike.dungeon.rooms.WaystoneRoom;
 import com.github.fnar.roguelike.dungeon.rooms.Platforms2Room;
 import com.github.fnar.roguelike.dungeon.rooms.PlatformsRoom;
@@ -201,6 +202,8 @@ public class RoomSetting {
         return new DimensionPortalRoom(this, levelSettings, worldEditor);
       case WAYSTONE:
         return new WaystoneRoom(this, levelSettings, worldEditor);
+      case WITCH_ALTAR:
+        return new WitchAltarRoom(this, levelSettings, worldEditor);
     }
   }
 

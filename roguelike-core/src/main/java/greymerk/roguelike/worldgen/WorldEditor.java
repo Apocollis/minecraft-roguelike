@@ -178,6 +178,17 @@ public interface WorldEditor {
   default void setBotaniaSpecialFlower(Coord coord, String subTileName) {
   }
 
+  /** Writes a string field on an existing tile entity. No-op if the tile is missing. */
+  default void setTileEntityString(Coord coord, String key, String value) {
+  }
+
+  /**
+   * Puts one item in a Forge item handler stored as {@code inventory_N} on an existing tile.
+   * No-op if the tile is missing.
+   */
+  default void setItemHandlerStack(Coord coord, int inventoryIndex, RldItemStack itemStack) {
+  }
+
   default boolean hasQueuedDungeonInChunk(int chunkX, int chunkZ) {
     return false;
   }
