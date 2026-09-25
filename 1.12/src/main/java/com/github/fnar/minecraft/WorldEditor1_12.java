@@ -60,19 +60,21 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import greymerk.roguelike.dungeon.Dungeon;
 import greymerk.roguelike.dungeon.DungeonBuildJob;
 import greymerk.roguelike.dungeon.DungeonLevel;
 import greymerk.roguelike.dungeon.RoguelikeDungeonSavedData;
+import greymerk.roguelike.dungeon.layout.DungeonNode;
 
-import greymerk.roguelike.dungeon.towers.TowerType;
 import greymerk.roguelike.treasure.TreasureChest;
 import greymerk.roguelike.treasure.TreasureManager;
 import greymerk.roguelike.worldgen.BlockBrush;
@@ -110,6 +112,12 @@ public class WorldEditor1_12 implements WorldEditor {
       Blocks.TRAPPED_CHEST
   );
   private static final int MAX_TRACKED_LIGHTS = 1024;
+  private static final int TOWER_RADIUS = 16;
+  private static final int NAME_ATTEMPTS = 12;
+  private static final String[] WAYSTONE_SUFFIXES = {
+      "Tower", "Keep", "Vault", "Reach", "Spire", "Citadel", "Hold", "Apex", "Overlook", "Bastion"
+  };
+  private static final Set<String> USED_DUNGEON_WAYSTONE_NAMES = ConcurrentHashMap.newKeySet();
 
   private final World world;
   private final Map<BlockType, Integer> stats = new HashMap<>();
@@ -798,6 +806,27 @@ public class WorldEditor1_12 implements WorldEditor {
   }
 
   private String chooseWaystoneName(Coord at) {
+    int x = at != null ? at.getX() : 0;
+    int y = at != null ? at.getY() : 64;
+    int z = at != null ? at.getZ() : 0;
+    int dimension = world.provider.getDimension();
+    long seed = getSeed();
+    for (int attempt = 0; attempt < NAME_ATTEMPTS; attempt++) {
+      Random nameRandom = new Random(Objects.hash(seed, dimension, x, y, z, attempt));
+      String full = givenName(at, nameRandom) + " " + WAYSTONE_SUFFIXES[nameRandom.nextInt(WAYSTONE_SUFFIXES.length)];
+      if (isDungeonWaystoneNameTaken(full)) {
+        continue;
+      }
+      claimDungeonWaystoneName(full);
+      return full;
+    }
+    String fallback = "Eniko " + WAYSTONE_SUFFIXES[Math.floorMod(Objects.hash(seed, x, z), WAYSTONE_SUFFIXES.length)]
+        + " " + Math.floorMod(Objects.hash(dimension, x, z), 1000);
+    claimDungeonWaystoneName(fallback);
+    return fallback;
+  }
+
+  private String givenName(Coord at, Random nameRandom) {
     String name = null;
     try {
       BlockPos samplePos = at != null
@@ -808,7 +837,7 @@ public class WorldEditor1_12 implements WorldEditor {
       java.lang.reflect.Method getMethod = nameGenClass.getMethod("get", World.class);
       Object nameGen = getMethod.invoke(null, world);
       java.lang.reflect.Method getNameMethod = nameGenClass.getMethod("getName", BlockPos.class, int.class, Biome.class, Random.class);
-      name = (String) getNameMethod.invoke(nameGen, samplePos, world.provider.getDimension(), biome, random);
+      name = (String) getNameMethod.invoke(nameGen, samplePos, world.provider.getDimension(), biome, nameRandom);
     } catch (Throwable e) {
       logger.info("Could not invoke Waystones NameGenerator via reflection: {}", e.getMessage());
     }
@@ -819,10 +848,56 @@ public class WorldEditor1_12 implements WorldEditor {
     if (name == null || name.isEmpty()) {
       name = "Eniko";
     }
-    String[] suffixes = new String[] {
-        "Tower", "Keep", "Vault", "Reach", "Spire", "Citadel", "Hold", "Apex", "Overlook", "Bastion"
-    };
-    return name + " " + suffixes[random.nextInt(suffixes.length)];
+    return name;
+  }
+
+  private boolean isDungeonWaystoneNameTaken(String name) {
+    if (USED_DUNGEON_WAYSTONE_NAMES.contains(waystoneNameKey(name))) {
+      return true;
+    }
+    Set<String> usedByWaystones = waystoneUsedNames();
+    return usedByWaystones != null && usedByWaystones.contains(name);
+  }
+
+  private void claimDungeonWaystoneName(String name) {
+    USED_DUNGEON_WAYSTONE_NAMES.add(waystoneNameKey(name));
+    Set<String> usedByWaystones = waystoneUsedNames();
+    if (usedByWaystones == null) {
+      return;
+    }
+    usedByWaystones.add(name);
+    markWaystoneNamesDirty();
+  }
+
+  private String waystoneNameKey(String name) {
+    return getSeed() + ":" + world.provider.getDimension() + ":" + name.toLowerCase(Locale.ROOT);
+  }
+
+  @SuppressWarnings("unchecked")
+  private Set<String> waystoneUsedNames() {
+    try {
+      Class<?> nameGenClass = Class.forName("net.blay09.mods.waystones.worldgen.NameGenerator");
+      Object nameGen = nameGenClass.getMethod("get", World.class).invoke(null, world);
+      java.lang.reflect.Field usedNames = nameGenClass.getDeclaredField("usedNames");
+      usedNames.setAccessible(true);
+      return (Set<String>) usedNames.get(nameGen);
+    } catch (Throwable e) {
+      return null;
+    }
+  }
+
+  private void markWaystoneNamesDirty() {
+    try {
+      Class<?> nameGenClass = Class.forName("net.blay09.mods.waystones.worldgen.NameGenerator");
+      Object nameGen = nameGenClass.getMethod("get", World.class).invoke(null, world);
+      try {
+        nameGenClass.getMethod("markDirty").invoke(nameGen);
+      } catch (NoSuchMethodException ignored) {
+        nameGenClass.getMethod("func_76185_a").invoke(nameGen);
+      }
+    } catch (Throwable e) {
+      logger.info("Could not mark Waystones names dirty: {}", e.getMessage());
+    }
   }
 
   private static int waystoneFacingIndex(Direction facing) {
@@ -846,16 +921,13 @@ public class WorldEditor1_12 implements WorldEditor {
     if (world == null || world.isRemote || origin == null) {
       return;
     }
-    Coord base = TowerType.getBaseCoord(this, origin);
-    if (base == null) {
-      return;
-    }
-
     List<RoguelikeDungeonSavedData.DungeonBoundingBox> boxes = new ArrayList<>();
-    int towerRadius = 16;
+    int roofY = findTowerRoofY(origin);
+    int entranceFloorY = levelZeroEntranceFloorY(levels, origin);
+    int towerMaxY = Math.max(roofY + 2, entranceFloorY);
     boxes.add(new RoguelikeDungeonSavedData.DungeonBoundingBox(
-        base.getX() - towerRadius, base.getY() - 30, base.getZ() - towerRadius,
-        base.getX() + towerRadius, base.getY() + 30, base.getZ() + towerRadius,
+        origin.getX() - TOWER_RADIUS, entranceFloorY, origin.getZ() - TOWER_RADIUS,
+        origin.getX() + TOWER_RADIUS, towerMaxY, origin.getZ() + TOWER_RADIUS,
         -1
     ));
 
@@ -869,8 +941,9 @@ public class WorldEditor1_12 implements WorldEditor {
         if (layoutBoxes == null) {
           continue;
         }
+        DungeonNode entrance = i == 0 ? level.getLayout().getStart() : null;
         for (Bounded box : layoutBoxes) {
-          if (box == null || box.getStart() == null || box.getEnd() == null) {
+          if (box == null || box == entrance || box.getStart() == null || box.getEnd() == null) {
             continue;
           }
           int minX = Math.min(box.getStart().getX(), box.getEnd().getX());
@@ -887,6 +960,41 @@ public class WorldEditor1_12 implements WorldEditor {
 
     RoguelikeDungeonSavedData.get(world).addDungeonBoxes(boxes);
     logger.info("Registered {} Roguelike dungeon structure boxes at {}", boxes.size(), origin);
+  }
+
+  /**
+   * Highest non-air block near the tower center. The stair shaft itself is air, so a few
+   * neighboring columns are scanned to catch the roof.
+   */
+  private int findTowerRoofY(Coord origin) {
+    int top = origin.getY();
+    int worldTop = world.getActualHeight() - 1;
+    for (int dx = -2; dx <= 2; dx++) {
+      for (int dz = -2; dz <= 2; dz++) {
+        for (int y = worldTop; y > origin.getY(); y--) {
+          if (!isAirBlock(new Coord(origin.getX() + dx, y, origin.getZ() + dz))) {
+            if (y > top) {
+              top = y;
+            }
+            break;
+          }
+        }
+      }
+    }
+    if (top <= origin.getY()) {
+      return origin.getY() + 40;
+    }
+    return top;
+  }
+
+  private static int levelZeroEntranceFloorY(List<DungeonLevel> levels, Coord origin) {
+    if (levels != null && !levels.isEmpty() && levels.get(0) != null && levels.get(0).getLayout() != null) {
+      DungeonNode entrance = levels.get(0).getLayout().getStart();
+      if (entrance != null && entrance.getStart() != null) {
+        return entrance.getStart().getY();
+      }
+    }
+    return origin.getY() - 1;
   }
 
   @Override

@@ -32,46 +32,66 @@ public class BotaniaGroveRoom extends BaseRoom {
   @Override
   protected void generateDecorations(Coord at, List<Direction> entrances) {
     Direction entrance = getEntrance(entrances);
-    List<Coord> corners = cornerFloors(at);
-    Coord gourmaryllisCorner = at.copy()
-        .translate(entrance.reverse(), cornerInset())
-        .translate(entrance.reverse().left(), cornerInset());
+    Direction back = entrance.reverse();
+    Direction side = back.left();
+    int outer = cornerInset();
+    int inner = outer - 1;
 
-    for (Coord corner : corners) {
-      BlockType.GRASS_BLOCK.getBrush().stroke(worldEditor, corner.copy().down(getDepth()));
-      if (corner.equals(gourmaryllisCorner)) {
-        continue;
-      }
-      placeMysticalFlower(corner);
-    }
+    placeFlowerCorner(at, back, side, outer, inner, true);
+    placeFlowerCorner(at, back, side.reverse(), outer, inner, false);
+    placeFlowerCorner(at, back.reverse(), side, outer, inner, false);
+    placeFlowerCorner(at, back.reverse(), side.reverse(), outer, inner, false);
 
     if (isBotaniaLoaded()) {
-      placeGourmaryllis(gourmaryllisCorner);
-      placeManaPool(at);
+      placeManaPool(cornerCell(at, back, side, inner, inner));
+      placePetalApothecary(at);
     }
 
-    Coord chest = at.copy().translate(entrance.left(), 2);
+    Coord chest = cornerCell(at, back.reverse(), side.reverse(), inner, inner);
     new TreasureChest(chest, worldEditor)
         .withChestType(getChestTypeOrUse(ChestType.FOOD))
-        .withFacing(entrance)
+        .withFacing(facingToward(chest, at))
         .withTrap(false)
         .stroke(worldEditor, chest);
 
     primaryLightBrush().stroke(worldEditor, at.copy().up(getCeilingHeight() - 1));
   }
 
-  private List<Coord> cornerFloors(Coord at) {
-    int inset = cornerInset();
-    List<Coord> corners = new ArrayList<>(4);
-    corners.add(at.copy().north(inset).west(inset));
-    corners.add(at.copy().north(inset).east(inset));
-    corners.add(at.copy().south(inset).west(inset));
-    corners.add(at.copy().south(inset).east(inset));
-    return corners;
+  /**
+   * L of three grass blocks against the walls. The inner cell of the 2x2 stays floor
+   * so a mana pool or chest can sit there.
+   */
+  private void placeFlowerCorner(Coord at, Direction outward, Direction lateral, int outer, int inner, boolean gourmaryllis) {
+    Coord outerCorner = cornerCell(at, outward, lateral, outer, outer);
+    List<Coord> grass = new ArrayList<>(3);
+    grass.add(outerCorner);
+    grass.add(cornerCell(at, outward, lateral, inner, outer));
+    grass.add(cornerCell(at, outward, lateral, outer, inner));
+    for (Coord plot : grass) {
+      BlockType.GRASS_BLOCK.getBrush().stroke(worldEditor, plot.copy().down(getDepth()));
+      if (gourmaryllis && plot.equals(outerCorner) && isBotaniaLoaded()) {
+        placeGourmaryllis(plot);
+      } else {
+        placeMysticalFlower(plot);
+      }
+    }
+  }
+
+  private static Coord cornerCell(Coord at, Direction outward, Direction lateral, int outwardSteps, int lateralSteps) {
+    return at.copy().translate(outward, outwardSteps).translate(lateral, lateralSteps);
   }
 
   private int cornerInset() {
     return getWallDist() - 1;
+  }
+
+  private static Direction facingToward(Coord from, Coord toward) {
+    int dx = toward.getX() - from.getX();
+    int dz = toward.getZ() - from.getZ();
+    if (Math.abs(dx) >= Math.abs(dz)) {
+      return dx >= 0 ? Direction.EAST : Direction.WEST;
+    }
+    return dz >= 0 ? Direction.SOUTH : Direction.NORTH;
   }
 
   private void placeMysticalFlower(Coord at) {
@@ -90,6 +110,10 @@ public class BotaniaGroveRoom extends BaseRoom {
   private void placeManaPool(Coord at) {
     namedBlock("botania:pool", 0).stroke(worldEditor, at);
     worldEditor.setBotaniaPoolMana(at, POOL_MANA);
+  }
+
+  private void placePetalApothecary(Coord at) {
+    namedBlock("botania:altar", 0).stroke(worldEditor, at);
   }
 
   private boolean isBotaniaLoaded() {
