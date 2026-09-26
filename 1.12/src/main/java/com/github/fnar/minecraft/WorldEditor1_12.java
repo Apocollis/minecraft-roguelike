@@ -127,6 +127,7 @@ public class WorldEditor1_12 implements WorldEditor {
   private final TreasureManager treasureManager;
   private final Set<ChunkPos> bulkDirtyChunks = new HashSet<>();
   private final List<BlockPos> bulkLights = new ArrayList<>();
+  private final List<BlockPos> bulkLiquids = new ArrayList<>();
 
   private int bulkDepth;
   private boolean bulkBoundsSet;
@@ -284,6 +285,9 @@ public class WorldEditor1_12 implements WorldEditor {
       recordBulkPlacement(pos, state);
     } else {
       world.setBlockState(pos, state, 2);
+      if (state.getMaterial().isLiquid()) {
+        scheduleLiquidFlow(pos);
+      }
     }
 
     setColorIfBed(coord, singleBlockBrush);
@@ -409,7 +413,30 @@ public class WorldEditor1_12 implements WorldEditor {
     DungeonGenerationScheduler.enqueue(world, job);
   }
 
+  private void scheduleLiquidFlow(BlockPos pos) {
+    BlockPos immutable = pos.toImmutable();
+    if (bulkDepth > 0) {
+      bulkLiquids.add(immutable);
+      return;
+    }
+    notifyLiquid(immutable);
+  }
+
+  private void notifyLiquid(BlockPos pos) {
+    IBlockState liquidState = world.getBlockState(pos);
+    if (!liquidState.getMaterial().isLiquid()) {
+      return;
+    }
+    world.neighborChanged(pos, liquidState.getBlock(), pos);
+  }
+
   private void flushBulkPlacement() {
+    List<BlockPos> liquids = new ArrayList<>(bulkLiquids);
+    bulkLiquids.clear();
+    for (BlockPos liquidPos : liquids) {
+      notifyLiquid(liquidPos);
+    }
+
     if (!bulkBoundsSet && bulkDirtyChunks.isEmpty()) {
       return;
     }
