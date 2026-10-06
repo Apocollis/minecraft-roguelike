@@ -20,5 +20,5 @@ Supporting references:
 | [rcst-to-room.md](rcst-to-room.md) | Recurrent Complex `.rcst` export → room overlay |
 
 **Modid:** `roguelike`  
-**Current version:** `2.5.4`  
-**Jar name:** `RoguelikeDungeons-Arcana-2.5.4.jar` (1.12.2 only; MC version is not in the filename)
+**Current version:** `2.5.5`
+**Jar name:** `RoguelikeDungeons-Arcana-2.5.5.jar` (1.12.2 only; MC version is not in the filename)

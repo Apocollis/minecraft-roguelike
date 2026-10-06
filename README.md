@@ -32,7 +32,7 @@ Or from `1.12/`:
 gradlew.bat build
 ```
 
-The jar is written to `1.12/build/libs/` (e.g. `RoguelikeDungeons-Arcana-2.5.4.jar`).
+The jar is written to `1.12/build/libs/` (e.g. `RoguelikeDungeons-Arcana-2.5.5.jar`).
 
 A successful `1.12` build also runs `deployToDevbox`, which replaces `RoguelikeDungeons-Arcana-*.jar` in:
 
