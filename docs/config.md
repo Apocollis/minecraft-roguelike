@@ -19,6 +19,12 @@ Code defaults live in `RogueConfig`. **Devbox often overrides them.** Missing ke
 
 `VILLAGE` must stay on the list for the village distance to apply. `0` on a distance key skips that check.
 
+## Build pacing
+
+| Key | Code default | Meaning |
+|-----|--------------|---------|
+| `prepareHeavyStepMaxIntervalTicks` | 100 | Longest wait (ticks) between heavy chunk steps (a load or populate) while a dungeon prepares its footprint. Past it one runs even while the server is catching up. Lower = faster prepare, more lag spikes on a busy server; very high (e.g. 1200) = only when the server keeps up. Minimum 1. |
+
 ## Other keys often customized in Arcana
 
 `encase`, `upperLimit`, `lowerLimit`, `preciousBlocks`, `doBuiltinSpawn`, `spawnFrequency`, `spawnAttempts` — see the Devbox cfg; do not assume code defaults.

@@ -6,6 +6,10 @@
   "client": [],
   "mixins": [
     "MixinCommandLocate",
-    "MixinChunkProviderServer"
+    "MixinChunkProviderServer",
+    "MixinMapGenStructureInvoker",
+    "MixinMapGenBaseAccessor",
+    "MixinChunkPopulateGate",
+    "MixinChunkPopulateInvoker"
   ]
 }

@@ -65,6 +65,26 @@ public class SettingsResolverTest {
     when(mockTreasureChest.isNotEmpty()).thenReturn(true);
   }
 
+  /**
+   * The settings cache hands out resolved copies. Generation removes entries from a level's secret
+   * room list, so resolving the same id twice must give independent lists.
+   */
+  @Test
+  public void resolvingTwiceGivesIndependentLevelSettings() {
+    DungeonSettings main = new DungeonSettings("main");
+    main.getLevelSettings(0).getSecrets().add(greymerk.roguelike.dungeon.base.RoomType.BTEAM.newSingleRoomSetting());
+    settingsContainer.put(main);
+
+    DungeonSettings first = settingsResolver.resolve("main");
+    DungeonSettings second = settingsResolver.resolve("main");
+
+    assertThat(first).isNotSameAs(second);
+    assertThat(first.getLevelSettings(0)).isNotSameAs(second.getLevelSettings(0));
+    first.getLevelSettings(0).getSecrets().getSecretRoomSettings().clear();
+    assertThat(second.getLevelSettings(0).getSecrets().getSecretRoomSettings()).isNotEmpty();
+    assertThat(main.getLevelSettings(0).getSecrets().getSecretRoomSettings()).isNotEmpty();
+  }
+
   @Test
   public void ResolveInheritOneLevel() {
     DungeonSettings main = new DungeonSettings("main");

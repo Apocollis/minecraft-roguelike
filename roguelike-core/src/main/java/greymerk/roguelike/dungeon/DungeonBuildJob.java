@@ -3,26 +3,48 @@ package greymerk.roguelike.dungeon;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.github.fnar.roguelike.events.GenerationEvents;
 import com.github.fnar.roguelike.events.GenerationPartsEvent;
 
 import greymerk.roguelike.dungeon.settings.DungeonSettings;
+import greymerk.roguelike.dungeon.tasks.DungeonStep;
 import greymerk.roguelike.dungeon.tasks.DungeonTaskRegistry;
 import greymerk.roguelike.dungeon.tasks.IDungeonTask;
+import greymerk.roguelike.worldgen.ChunkFootprint;
+import greymerk.roguelike.worldgen.ChunkPreparePolicy;
+import greymerk.roguelike.worldgen.ChunkReservation;
 import greymerk.roguelike.worldgen.Coord;
 import greymerk.roguelike.worldgen.WorldEditor;
 
 import static greymerk.roguelike.dungeon.Dungeon.MOD_ID;
 
 /**
- * Runs dungeon stages one task at a time so a caller can spread work across
- * server ticks. One task may still overrun the budget (rooms/filters/supports).
+ * Runs dungeon stages one step at a time so a caller can spread work across server ticks.
+ * Tasks split themselves into steps ({@link IDungeonTask#steps}); a {@link DungeonStep} can add
+ * follow-up steps that run right after it. One step (a large room) may still overrun the budget.
+ *
+ * <p>Each tick spends from a {@link TickBudget} shared by every world's job in that server tick.
+ * While the server is catching up, no new steps run, but the deferred light keeps draining (the
+ * pause lives here, not in the scheduler, so the drain never stops). After the last stage the job
+ * stays queued in a light-drain phase and only then releases its chunks, so they are not unloaded
+ * with stale light.
  */
 public class DungeonBuildJob {
 
   private static final Logger logger = LogManager.getLogger(MOD_ID);
+  private static final long NANOS_PER_MS = 1_000_000L;
+  /** A step longer than this logs its label. */
+  private static final long SLOW_STEP_NANOS = 20 * NANOS_PER_MS;
+  /** After this many ticks without a normal step, one runs anyway so a lagging server still finishes. */
+  static final int MAX_PAUSE_TICKS = 200;
+  /** Queued light positions above which no new steps start until the drain catches up. */
+  static final int LIGHT_BACKLOG_LIMIT = 20_000;
+  /** How long the populate pass of PREPARE_CHUNKS waits for deferred populates (~30 s). */
+  static final int POPULATE_WAIT_TICKS = 600;
 
   private final WorldEditor editor;
   private final Dungeon dungeon;
@@ -32,11 +54,26 @@ public class DungeonBuildJob {
   private final GenerationPartsEvent generationPartsEvents;
 
   private boolean prepared;
+  private boolean draining;
   private boolean finished;
   private boolean failed;
   private int stageIndex;
   private int taskIndex;
+  private int pausedTicks;
+  private int drainTicks;
   private long stageStartMs;
+  private long stageWorkNanos;
+  private long stageLongestStepNanos;
+  private long stageFlushNanos;
+  private long stageLongestFlushNanos;
+  private long stageLongestWorldTickNanos;
+
+  /** Steps of the current task; the job owns them because task instances are shared. */
+  private List<Runnable> taskSteps;
+  private int taskStepIndex;
+
+  private ChunkPreparePolicy preparePolicy;
+  private ChunkReservation reservation = ChunkReservation.NONE;
 
   public DungeonBuildJob(
       WorldEditor editor,
@@ -58,48 +95,113 @@ public class DungeonBuildJob {
   }
 
   public void runToCompletion() {
-    while (tick(30_000_000_000L)) {
-      // keep consuming 30s slices until the job is done
+    while (tick(TickBudget.unlimited())) {
+      // keep going until the job, including its light drain, is done
     }
   }
 
   /**
-   * @param budgetNanos maximum time to spend this call, after the first task
+   * Drops an unfinished job (world unload) and releases its held chunks.
+   */
+  public void abandon() {
+    if (finished) {
+      return;
+    }
+    editor.clearDungeonWaystoneName();
+    editor.clearPendingLight();
+    releaseChunks();
+    finished = true;
+  }
+
+  /** This world's tick time (START to END), for the stage log's "largest world tick". */
+  public void recordWorldTick(long nanos) {
+    stageLongestWorldTickNanos = Math.max(stageLongestWorldTickNanos, nanos);
+  }
+
+  /**
+   * @param budget this server tick's shared budget; this call spends from it
    * @return true if more work remains
    */
-  public boolean tick(long budgetNanos) {
+  public boolean tick(TickBudget budget) {
     if (finished) {
       return false;
     }
     if (!editor.isWorldAvailable()) {
       logger.warn("Dropping dungeon generation for id {} at {}; world is unavailable.", settings.getId(), coord);
-      editor.clearDungeonWaystoneName();
-      finished = true;
+      abandon();
       return false;
     }
 
-    long deadline = System.nanoTime() + Math.max(0L, budgetNanos);
     editor.beginBulkPlacement();
     try {
       if (!prepared) {
         prepare();
         prepared = true;
       }
-
-      boolean first = true;
-      while (!finished && (first || System.nanoTime() < deadline)) {
-        first = false;
-        stepOnce();
+      if (draining) {
+        drainTicks++;
+      } else {
+        runSteps(budget);
       }
     } catch (Exception e) {
       logger.error("Dungeon generation failed for id {} at {}.", settings.getId(), coord, e);
-      editor.clearDungeonWaystoneName();
-      finished = true;
+      abandon();
       return false;
     } finally {
-      editor.endBulkPlacement();
+      long flushStart = System.nanoTime();
+      editor.endBulkPlacement(budget.drainNanos());
+      long flush = System.nanoTime() - flushStart;
+      budget.spend(flush);
+      stageFlushNanos += flush;
+      stageLongestFlushNanos = Math.max(stageLongestFlushNanos, flush);
+    }
+
+    if (draining && !finished && editor.pendingLightCount() == 0) {
+      finishDrain();
     }
     return !finished;
+  }
+
+  private void runSteps(TickBudget budget) {
+    // PREPARE_CHUNKS gates itself per heavy step (and holds loaded chunks even while behind).
+    if (currentStage() == DungeonStage.PREPARE_CHUNKS) {
+      long start = System.nanoTime();
+      boolean done = preparePolicy().tick(budget);
+      recordStep(System.nanoTime() - start);
+      if (!done) {
+        return;
+      }
+      logger.info("PREPARE_CHUNKS: {}", preparePolicy.summary());
+      finishStage(DungeonStage.PREPARE_CHUNKS);
+    }
+
+    boolean force = pausedTicks >= MAX_PAUSE_TICKS;
+    boolean blocked = budget.isBehind()
+        || budget.remainingNanos() <= 0
+        || editor.pendingLightCount() > LIGHT_BACKLOG_LIMIT;
+    if (blocked && !force) {
+      pausedTicks++;
+      return;
+    }
+    pausedTicks = 0;
+
+    long deadline = saturatedAdd(System.nanoTime(), budget.remainingNanos());
+    boolean first = true;
+    while (!finished && !draining && (first || System.nanoTime() < deadline)) {
+      first = false;
+      if (currentStage() == DungeonStage.PREPARE_CHUNKS) {
+        // Reached a later PREPARE_CHUNKS only by finishing LAYOUT this tick; it starts next tick.
+        return;
+      }
+      long start = System.nanoTime();
+      stepOnce();
+      budget.spend(System.nanoTime() - start);
+    }
+  }
+
+  private DungeonStage currentStage() {
+    DungeonStage[] stages = DungeonStage.values();
+    return stageIndex < stages.length ? stages[stageIndex] : null;
   }
 
   private void prepare() {
@@ -108,46 +210,122 @@ public class DungeonBuildJob {
       generationEvents.eventPre(settings.getId(), coord);
     }
     dungeon.beginBuild(coord, settings);
-    stageStartMs = System.currentTimeMillis();
+    resetStageTiming();
   }
 
   private void stepOnce() {
-    DungeonStage[] stages = DungeonStage.values();
-    if (stageIndex >= stages.length) {
+    DungeonStage stage = currentStage();
+    if (stage == null) {
       complete();
       return;
     }
 
-    DungeonStage stage = stages[stageIndex];
     List<IDungeonTask> tasks = DungeonTaskRegistry.getInstance().getTasks(stage);
-
     if (taskIndex >= tasks.size()) {
-      logStage(stage);
-      stageIndex++;
-      taskIndex = 0;
-      stageStartMs = System.currentTimeMillis();
+      finishStage(stage);
       return;
     }
 
-    if (taskIndex == 0) {
-      stageStartMs = System.currentTimeMillis();
+    IDungeonTask task = tasks.get(taskIndex);
+    long start = System.nanoTime();
+    if (taskSteps == null) {
+      taskSteps = planTask(task);
+      taskStepIndex = 0;
     }
-    if (!dungeon.executeTaskSafely(settings, tasks.get(taskIndex))) {
+    if (taskStepIndex >= taskSteps.size()) {
+      taskSteps = null;
+      taskIndex++;
+      return;
+    }
+    Runnable step = taskSteps.get(taskStepIndex++);
+    try {
+      step.run();
+      if (step instanceof DungeonStep) {
+        List<DungeonStep> followUps = ((DungeonStep) step).followUps();
+        if (!followUps.isEmpty()) {
+          taskSteps.addAll(taskStepIndex, followUps);
+        }
+      }
+    } catch (Exception exception) {
+      // Same as before slicing: a failed task stops (pending follow-ups included), the build continues with the next task.
+      logger.error("Dungeon task failed for task {}", task.getClass().getName(), exception);
       failed = true;
+      taskStepIndex = taskSteps.size();
     }
-    taskIndex++;
+    long nanos = System.nanoTime() - start;
+    recordStep(nanos);
+    if (nanos > SLOW_STEP_NANOS) {
+      String label = step instanceof DungeonStep ? ((DungeonStep) step).label() : null;
+      logger.info("Slow dungeon step {}ms in {}: {}", nanos / NANOS_PER_MS, stage,
+          label != null ? label : task.getClass().getSimpleName());
+    }
   }
 
-  private void logStage(DungeonStage stage) {
-    long stageTime = System.currentTimeMillis() - stageStartMs;
+  private List<Runnable> planTask(IDungeonTask task) {
+    try {
+      // A copy the job can insert follow-ups into.
+      return new ArrayList<>(task.steps(editor, dungeon, settings));
+    } catch (Exception exception) {
+      logger.error("Dungeon task failed for task {}", task.getClass().getName(), exception);
+      failed = true;
+      return Collections.emptyList();
+    }
+  }
+
+  private ChunkPreparePolicy preparePolicy() {
+    if (preparePolicy == null) {
+      ChunkFootprint footprint = dungeon.getFootprint();
+      reservation = editor.reserveChunks(footprint.getAll().size());
+      preparePolicy = new ChunkPreparePolicy(reservation, footprint, POPULATE_WAIT_TICKS);
+      logger.info("Preparing {} footprint chunks for dungeon id {} at {}.", footprint.getAll().size(), settings.getId(), coord);
+    }
+    return preparePolicy;
+  }
+
+  private void recordStep(long nanos) {
+    stageWorkNanos += nanos;
+    stageLongestStepNanos = Math.max(stageLongestStepNanos, nanos);
+  }
+
+  private void finishStage(DungeonStage stage) {
+    String light = editor.takeLightStats();
     logger.info(
-        "Completed dungeon stage [{}/{}] {} in {}ms",
+        "Completed dungeon stage [{}/{}] {}: work {}ms (longest single step {}ms), end-of-tick flush {}ms (longest {}ms), "
+            + "largest world tick {}ms, elapsed {}ms{}",
         stageIndex + 1,
         DungeonStage.values().length,
         stage,
-        stageTime);
+        stageWorkNanos / NANOS_PER_MS,
+        stageLongestStepNanos / NANOS_PER_MS,
+        stageFlushNanos / NANOS_PER_MS,
+        stageLongestFlushNanos / NANOS_PER_MS,
+        stageLongestWorldTickNanos / NANOS_PER_MS,
+        System.currentTimeMillis() - stageStartMs,
+        light.isEmpty() ? "" : ", " + light);
+    stageIndex++;
+    taskIndex = 0;
+    resetStageTiming();
   }
 
+  private void resetStageTiming() {
+    stageStartMs = System.currentTimeMillis();
+    stageWorkNanos = 0;
+    stageLongestStepNanos = 0;
+    stageFlushNanos = 0;
+    stageLongestFlushNanos = 0;
+    stageLongestWorldTickNanos = 0;
+  }
+
+  private void releaseChunks() {
+    try {
+      reservation.release();
+    } catch (Exception e) {
+      logger.warn("Failed to release footprint chunks for dungeon at {}.", coord, e);
+    }
+    reservation = ChunkReservation.NONE;
+  }
+
+  /** Last stage done: report and register the dungeon, then keep the chunks until light drains. */
   private void complete() {
     if (failed) {
       logger.error("Dungeon generation finished with task failures for id {} at {}.", settings.getId(), coord);
@@ -155,12 +333,30 @@ public class DungeonBuildJob {
       logger.info("Successfully generated dungeon with id {} at {}.", settings.getId(), coord);
     }
 
-    if (generationEvents != null) {
-      generationEvents.eventPost(settings.getId(), coord);
+    try {
+      if (generationEvents != null) {
+        generationEvents.eventPost(settings.getId(), coord);
+      }
+      dungeon.postLevelBoundingBoxes(generationPartsEvents, settings.getId());
+      dungeon.registerStructureBoxes();
+    } finally {
+      editor.clearDungeonWaystoneName();
+      draining = true;
+      resetStageTiming();
     }
-    dungeon.postLevelBoundingBoxes(generationPartsEvents, settings.getId());
-    dungeon.registerStructureBoxes();
-    editor.clearDungeonWaystoneName();
+  }
+
+  private void finishDrain() {
+    editor.sendChangedChunks(true);
+    String light = editor.takeLightStats();
+    logger.info("Light drained for dungeon at {} in {} ticks, flush {}ms{}; releasing footprint chunks.",
+        coord, drainTicks, stageFlushNanos / NANOS_PER_MS, light.isEmpty() ? "" : ", " + light);
+    releaseChunks();
     finished = true;
+  }
+
+  private static long saturatedAdd(long a, long b) {
+    long sum = a + b;
+    return ((a ^ sum) & (b ^ sum)) < 0 ? Long.MAX_VALUE : sum;
   }
 }

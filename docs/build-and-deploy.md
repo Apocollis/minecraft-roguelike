@@ -34,5 +34,6 @@ Bump in **all** of:
 - `roguelike-core/build.gradle`
 - `Roguelike.version` in `1.12/.../Roguelike.java`
 - README example jar name
+- `docs/README.md` (current version and jar name)
 
 `archivesBaseName` is `RoguelikeDungeons-Arcana` (no `1.12.2` in the file name). `mcmod.info` still records Minecraft 1.12.2 via `minecraft_version`.

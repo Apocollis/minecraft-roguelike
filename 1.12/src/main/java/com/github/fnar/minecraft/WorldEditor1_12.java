@@ -30,6 +30,8 @@ import com.github.fnar.minecraft.world.BlockPosMapper1_12;
 import com.github.fnar.roguelike.events.StructureGenerationEvent;
 import com.github.fnar.roguelike.events.StructurePartsGenerationEvent;
 import com.github.fnar.roguelike.worldgen.DungeonGenerationScheduler;
+import com.github.fnar.roguelike.worldgen.ForgeChunkReservation;
+import com.github.fnar.roguelike.worldgen.VanillaStructureScanner;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
@@ -42,6 +44,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.network.play.server.SPacketChunkData;
+import net.minecraft.server.management.PlayerChunkMapEntry;
 import net.minecraft.tileentity.*;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
@@ -61,6 +64,8 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -81,6 +86,7 @@ import greymerk.roguelike.treasure.TreasureChest;
 import greymerk.roguelike.treasure.TreasureManager;
 import greymerk.roguelike.worldgen.BlockBrush;
 import greymerk.roguelike.worldgen.Bounded;
+import greymerk.roguelike.worldgen.ChunkReservation;
 import greymerk.roguelike.worldgen.Coord;
 import greymerk.roguelike.worldgen.Direction;
 import greymerk.roguelike.worldgen.VanillaStructure;
@@ -113,7 +119,12 @@ public class WorldEditor1_12 implements WorldEditor {
       Blocks.MOB_SPAWNER,
       Blocks.TRAPPED_CHEST
   );
-  private static final int MAX_TRACKED_LIGHTS = 1024;
+  /** Default light drain per flush when no budget is given (legacy {@link #endBulkPlacement()}). */
+  private static final long DEFAULT_LIGHT_DRAIN_NANOS = 8_000_000L;
+  /** Ticks between full-chunk packets for the same chunk while a build keeps changing it. */
+  private static final long CHUNK_RESEND_TICKS = 20;
+  /** Horizontal radius vanilla {@code checkLightFor} requires loaded ({@code isAreaLoaded(pos, 16)}). */
+  private static final int LIGHT_AREA_RADIUS = 16;
   private static final int TOWER_RADIUS = 16;
   private static final int NAME_ATTEMPTS = 12;
   private static final String[] WAYSTONE_SUFFIXES = {
@@ -125,18 +136,22 @@ public class WorldEditor1_12 implements WorldEditor {
   private final Map<BlockType, Integer> stats = new HashMap<>();
   private final Random random;
   private final TreasureManager treasureManager;
-  private final Set<ChunkPos> bulkDirtyChunks = new HashSet<>();
-  private final List<BlockPos> bulkLights = new ArrayList<>();
+  /** Positions whose light opacity or light value changed in bulk mode, deduplicated, in order. */
+  private final LinkedHashSet<BlockPos> pendingLight = new LinkedHashSet<>();
+  /** Chunks changed since they were last sent to players. */
+  private final Set<ChunkPos> dirtyChunks = new LinkedHashSet<>();
+  /** Every chunk changed during this editor's builds, for the final send. */
+  private final Set<ChunkPos> changedChunks = new LinkedHashSet<>();
+  private final Map<ChunkPos, Long> lastSentTick = new HashMap<>();
   private final List<BlockPos> bulkLiquids = new ArrayList<>();
 
   private int bulkDepth;
-  private boolean bulkBoundsSet;
-  private int bulkMinX;
-  private int bulkMinY;
-  private int bulkMinZ;
-  private int bulkMaxX;
-  private int bulkMaxY;
-  private int bulkMaxZ;
+  private long lightQueued;
+  private long lightDrained;
+  private long lightMissingChunkSkips;
+  private long lightHeightSkips;
+  private int lightHeightSkipMinY = Integer.MAX_VALUE;
+  private int lightHeightSkipMaxY = Integer.MIN_VALUE;
   private IBlockState mappedStateCache;
   private SingleBlockBrush mappedBrushCache;
   private Direction mappedFacingCache;
@@ -281,8 +296,7 @@ public class WorldEditor1_12 implements WorldEditor {
 
     BlockPos pos = BlockPosMapper1_12.map(coord);
     if (bulkDepth > 0 && canBulkPlace(state)) {
-      world.getChunkFromBlockCoords(pos).setBlockState(pos, state);
-      recordBulkPlacement(pos, state);
+      bulkPlace(pos, state);
     } else {
       world.setBlockState(pos, state, 2);
       if (state.getMaterial().isLiquid()) {
@@ -341,50 +355,36 @@ public class WorldEditor1_12 implements WorldEditor {
     return extra;
   }
 
+  /**
+   * Any state without a tile entity and that is not a liquid. For those, {@code chunk.setBlockState}
+   * does what {@code world.setBlockState(pos, state, 2)} does (including {@code onBlockAdded}) minus
+   * the per-block {@code checkLight} and client packet, which the flush handles. Tile entities stay
+   * on the world path because chest, spawner, bed and waystone code reads and syncs the TE right
+   * after placement; liquids keep their deferred flow update. Flag 2 sends no neighbour updates, so
+   * none are added here either (a neighbour update would turn a half-placed door to air).
+   */
   private static boolean canBulkPlace(IBlockState state) {
-    Block block = state.getBlock();
-    if (block.hasTileEntity(state)) {
-      return false;
-    }
-    if (block == Blocks.AIR) {
-      return true;
-    }
-    return state.isOpaqueCube() && state.getLightValue() == 0;
+    return !state.getBlock().hasTileEntity(state) && !state.getMaterial().isLiquid();
   }
 
-  private void recordBulkPlacement(BlockPos pos, IBlockState state) {
-    int x = pos.getX();
-    int y = pos.getY();
-    int z = pos.getZ();
-    if (!bulkBoundsSet) {
-      bulkMinX = bulkMaxX = x;
-      bulkMinY = bulkMaxY = y;
-      bulkMinZ = bulkMaxZ = z;
-      bulkBoundsSet = true;
-    } else {
-      if (x < bulkMinX) {
-        bulkMinX = x;
-      }
-      if (x > bulkMaxX) {
-        bulkMaxX = x;
-      }
-      if (y < bulkMinY) {
-        bulkMinY = y;
-      }
-      if (y > bulkMaxY) {
-        bulkMaxY = y;
-      }
-      if (z < bulkMinZ) {
-        bulkMinZ = z;
-      }
-      if (z > bulkMaxZ) {
-        bulkMaxZ = z;
+  private void bulkPlace(BlockPos pos, IBlockState state) {
+    Chunk chunk = world.getChunkFromBlockCoords(pos);
+    IBlockState old = chunk.getBlockState(pos);
+    int oldOpacity = old.getLightOpacity(world, pos);
+    int oldLight = old.getLightValue(world, pos);
+    if (chunk.setBlockState(pos, state) == null) {
+      return;
+    }
+    if (state.getLightOpacity(world, pos) != oldOpacity || state.getLightValue(world, pos) != oldLight) {
+      if (pendingLight.add(pos.toImmutable())) {
+        lightQueued++;
       }
     }
-    bulkDirtyChunks.add(new ChunkPos(pos));
-    if (state.getLightValue() > 0 && bulkLights.size() < MAX_TRACKED_LIGHTS) {
-      bulkLights.add(pos.toImmutable());
-    }
+    // What today's flag-2 world path does after placing: pulse adjacent observers only.
+    world.updateObservingBlocksAt(pos, state.getBlock());
+    ChunkPos chunkPos = chunk.getPos();
+    dirtyChunks.add(chunkPos);
+    changedChunks.add(chunkPos);
   }
 
   @Override
@@ -394,13 +394,110 @@ public class WorldEditor1_12 implements WorldEditor {
 
   @Override
   public void endBulkPlacement() {
+    endBulkPlacement(DEFAULT_LIGHT_DRAIN_NANOS);
+  }
+
+  @Override
+  public void endBulkPlacement(long lightBudgetNanos) {
     if (bulkDepth <= 0) {
       return;
     }
     bulkDepth--;
     if (bulkDepth == 0) {
-      flushBulkPlacement();
+      flushBulkPlacement(lightBudgetNanos);
     }
+  }
+
+  @Override
+  public int pendingLightCount() {
+    return pendingLight.size();
+  }
+
+  @Override
+  public void drainLight(long budgetNanos) {
+    long deadline = System.nanoTime() + Math.max(0L, budgetNanos);
+    if (deadline < 0 && budgetNanos > 0) {
+      deadline = Long.MAX_VALUE;
+    }
+    Iterator<BlockPos> it = pendingLight.iterator();
+    int sinceCheck = 0;
+    while (it.hasNext()) {
+      if (++sinceCheck >= 16) {
+        sinceCheck = 0;
+        if (System.nanoTime() >= deadline) {
+          return;
+        }
+      }
+      BlockPos pos = it.next();
+      it.remove();
+      if (!world.isAreaLoaded(pos, LIGHT_AREA_RADIUS, false)) {
+        recordLightSkip(pos);
+        continue;
+      }
+      world.checkLight(pos);
+      lightDrained++;
+    }
+  }
+
+  /**
+   * A position {@code checkLight} would refuse. Classified by cause, not by Y: Depths Update patches
+   * {@code isAreaLoaded} and lighting, so vanilla's {@code y + 16 < 0} rule cannot be assumed.
+   * A missing horizontal chunk is a footprint bug; otherwise the world rejected it for height.
+   */
+  private void recordLightSkip(BlockPos pos) {
+    if (hasMissingChunkAround(pos)) {
+      lightMissingChunkSkips++;
+      if (lightMissingChunkSkips <= 5) {
+        logger.warn("Dungeon light skipped at {}: a chunk within {} blocks is not loaded (footprint bug).", pos, LIGHT_AREA_RADIUS);
+      }
+      return;
+    }
+    lightHeightSkips++;
+    lightHeightSkipMinY = Math.min(lightHeightSkipMinY, pos.getY());
+    lightHeightSkipMaxY = Math.max(lightHeightSkipMaxY, pos.getY());
+  }
+
+  /** Side-effect-free peek; {@code getLoadedChunk} would cancel those chunks' pending unloads. */
+  private boolean hasMissingChunkAround(BlockPos pos) {
+    if (!(world instanceof WorldServer)) {
+      return false;
+    }
+    ChunkProviderServer provider = ((WorldServer) world).getChunkProvider();
+    int minX = (pos.getX() - LIGHT_AREA_RADIUS) >> 4;
+    int maxX = (pos.getX() + LIGHT_AREA_RADIUS) >> 4;
+    int minZ = (pos.getZ() - LIGHT_AREA_RADIUS) >> 4;
+    int maxZ = (pos.getZ() + LIGHT_AREA_RADIUS) >> 4;
+    for (int cx = minX; cx <= maxX; cx++) {
+      for (int cz = minZ; cz <= maxZ; cz++) {
+        if (provider.id2ChunkMap.get(ChunkPos.asLong(cx, cz)) == null) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  @Override
+  public void clearPendingLight() {
+    pendingLight.clear();
+    bulkLiquids.clear();
+  }
+
+  @Override
+  public String takeLightStats() {
+    if (lightQueued == 0 && lightDrained == 0 && lightMissingChunkSkips == 0 && lightHeightSkips == 0) {
+      return "";
+    }
+    String heightRange = lightHeightSkips == 0 ? "" : " (Y " + lightHeightSkipMinY + " to " + lightHeightSkipMaxY + ")";
+    String stats = String.format("light queued %d, drained %d, pending %d, missing-chunk skips %d, height skips %d%s",
+        lightQueued, lightDrained, pendingLight.size(), lightMissingChunkSkips, lightHeightSkips, heightRange);
+    lightQueued = 0;
+    lightDrained = 0;
+    lightMissingChunkSkips = 0;
+    lightHeightSkips = 0;
+    lightHeightSkipMinY = Integer.MAX_VALUE;
+    lightHeightSkipMaxY = Integer.MIN_VALUE;
+    return stats;
   }
 
   @Override
@@ -411,6 +508,14 @@ public class WorldEditor1_12 implements WorldEditor {
   @Override
   public void enqueueDungeonBuild(DungeonBuildJob job) {
     DungeonGenerationScheduler.enqueue(world, job);
+  }
+
+  @Override
+  public ChunkReservation reserveChunks(int chunkCount) {
+    if (world == null || world.isRemote) {
+      return ChunkReservation.NONE;
+    }
+    return new ForgeChunkReservation(world, chunkCount);
   }
 
   private void scheduleLiquidFlow(BlockPos pos) {
@@ -430,54 +535,57 @@ public class WorldEditor1_12 implements WorldEditor {
     world.neighborChanged(pos, liquidState.getBlock(), pos);
   }
 
-  private void flushBulkPlacement() {
+  private void flushBulkPlacement(long lightBudgetNanos) {
     List<BlockPos> liquids = new ArrayList<>(bulkLiquids);
     bulkLiquids.clear();
     for (BlockPos liquidPos : liquids) {
       notifyLiquid(liquidPos);
     }
 
-    if (!bulkBoundsSet && bulkDirtyChunks.isEmpty()) {
-      return;
-    }
-
-    for (BlockPos light : bulkLights) {
-      world.checkLight(light);
-    }
-    if (bulkBoundsSet) {
-      for (int x = bulkMinX; x <= bulkMaxX; x += 8) {
-        for (int y = bulkMinY; y <= bulkMaxY; y += 8) {
-          for (int z = bulkMinZ; z <= bulkMaxZ; z += 8) {
-            world.checkLight(new BlockPos(x, y, z));
-          }
-        }
-      }
-      world.markBlockRangeForRenderUpdate(bulkMinX, bulkMinY, bulkMinZ, bulkMaxX, bulkMaxY, bulkMaxZ);
-    }
-
-    if (world instanceof WorldServer) {
-      WorldServer worldServer = (WorldServer) world;
-      for (ChunkPos chunkPos : bulkDirtyChunks) {
-        Chunk chunk = world.getChunkFromChunkCoords(chunkPos.x, chunkPos.z);
-        chunk.markDirty();
-        notifyPlayersOfChunk(worldServer, chunk, chunkPos);
-      }
-    }
-
-    bulkDirtyChunks.clear();
-    bulkLights.clear();
-    bulkBoundsSet = false;
+    drainLight(lightBudgetNanos);
+    sendChangedChunks(false);
   }
 
-  private static void notifyPlayersOfChunk(WorldServer worldServer, Chunk chunk, ChunkPos chunkPos) {
-    for (EntityPlayer player : worldServer.playerEntities) {
-      if (!(player instanceof EntityPlayerMP)) {
+  /**
+   * Full-chunk packets through each chunk's {@code PlayerChunkMapEntry}, so only players watching
+   * the chunk get it (a radius check could send a client a chunk it never gets an unload for).
+   * A chunk is resent at most every {@link #CHUNK_RESEND_TICKS} ticks while it keeps changing; the
+   * final send after the light drain ignores that window.
+   */
+  @Override
+  public void sendChangedChunks(boolean ignoreResendWindow) {
+    if (!(world instanceof WorldServer)) {
+      dirtyChunks.clear();
+      return;
+    }
+    WorldServer worldServer = (WorldServer) world;
+    long now = world.getTotalWorldTime();
+    Set<ChunkPos> toSend = ignoreResendWindow ? changedChunks : dirtyChunks;
+    Iterator<ChunkPos> it = toSend.iterator();
+    while (it.hasNext()) {
+      ChunkPos chunkPos = it.next();
+      Long last = lastSentTick.get(chunkPos);
+      if (!ignoreResendWindow && last != null && now - last < CHUNK_RESEND_TICKS) {
         continue;
       }
-      if (Math.abs(player.chunkCoordX - chunkPos.x) > 8 || Math.abs(player.chunkCoordZ - chunkPos.z) > 8) {
-        continue;
+      Chunk chunk = worldServer.getChunkProvider().id2ChunkMap.get(ChunkPos.asLong(chunkPos.x, chunkPos.z));
+      if (chunk != null) {
+        chunk.markDirty();
+        PlayerChunkMapEntry entry = worldServer.getPlayerChunkMap().getEntry(chunkPos.x, chunkPos.z);
+        if (entry != null && entry.isSentToPlayers()) {
+          entry.sendPacket(new SPacketChunkData(chunk, 65535));
+        }
       }
-      ((EntityPlayerMP) player).connection.sendPacket(new SPacketChunkData(chunk, 65535));
+      lastSentTick.put(chunkPos, now);
+      dirtyChunks.remove(chunkPos);
+      if (!ignoreResendWindow) {
+        it.remove();
+      }
+    }
+    if (ignoreResendWindow) {
+      changedChunks.clear();
+      dirtyChunks.clear();
+      lastSentTick.clear();
     }
   }
 
@@ -545,10 +653,8 @@ public class WorldEditor1_12 implements WorldEditor {
 
   @Override
   public Coord findNearestStructure(VanillaStructure type, Coord coord, int radius) {
-    ChunkProviderServer chunkProvider = ((WorldServer) world).getChunkProvider();
-    String structureName = VanillaStructure.getName(type);
-    BlockPos structureBlockPosition = chunkProvider.getNearestStructurePos(world, structureName, BlockPosMapper1_12.map(coord), false);
-    return Optional.ofNullable(structureBlockPosition).map(BlockPosMapper1_12::map).orElse(null);
+    // Bounded scan; getNearestStructurePos searches outward without a limit.
+    return VanillaStructureScanner.findNearest(world, type, coord, radius);
   }
 
   private void setColorIfBed(Coord coord, SingleBlockBrush singleBlockBrush) {

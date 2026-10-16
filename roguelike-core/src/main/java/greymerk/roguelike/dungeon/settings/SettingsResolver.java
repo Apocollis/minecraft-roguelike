@@ -22,10 +22,28 @@ import static java.util.stream.Collectors.toList;
 
 public class SettingsResolver {
 
+  /**
+   * Parsed settings files, kept until {@link #invalidate()}. Loading reads every JSON file under
+   * the settings folder, which is too slow to repeat on every dungeon and every spawner lookup.
+   * Callers only ever get new objects from {@link #resolve} and {@link #chooseRandom}
+   * (inheritance copies them), so generation can still mutate what it is handed.
+   */
+  private static volatile SettingsResolver cached;
+
   private final SettingsContainer settingsContainer;
 
   public static SettingsResolver getInstance(ModLoader modLoader) {
-    return new SettingsResolver(new SettingsContainer(modLoader).loadFiles());
+    SettingsResolver resolver = cached;
+    if (resolver == null) {
+      resolver = new SettingsResolver(new SettingsContainer(modLoader).loadFiles());
+      cached = resolver;
+    }
+    return resolver;
+  }
+
+  /** Drops the cached settings; the next {@link #getInstance} reloads the files. */
+  public static void invalidate() {
+    cached = null;
   }
 
   public SettingsResolver(SettingsContainer settingsContainer) {

@@ -23,6 +23,7 @@ public class StructurePartsGenerationEvent extends WorldEvent implements Generat
 
     public StructurePartsGenerationEvent(World world, @NonNull SettingIdentifier id, @NonNull List<Float> coords) {
         super(world);
+        this.world = world;
         this.identifier = id;
         this.coords = coords;
     }

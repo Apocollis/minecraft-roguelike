@@ -9,7 +9,7 @@ buildscript {
 }
 apply plugin: 'net.minecraftforge.gradle'
 
-version = "2.5.5"
+version = "2.5.6"
 group = "com.github.apocollis"
 archivesBaseName = "RoguelikeDungeons-Arcana"
 

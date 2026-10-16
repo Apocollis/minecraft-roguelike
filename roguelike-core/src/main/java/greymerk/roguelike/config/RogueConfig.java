@@ -61,6 +61,12 @@ public class RogueConfig {
   public static final RogueConfig GRID_MIN_CHUNK_DISTANCE = new RogueConfig("gridMinChunkDistance").withValue(32);
   public static final RogueConfig GRID_MAX_CHUNK_DISTANCE = new RogueConfig("gridMaxChunkDistance").withValue(48);
   public static final RogueConfig GRID_SEED_OFFSET = new RogueConfig("gridSeedOffset").withValue(1432289);
+  /**
+   * Longest wait, in ticks, between heavy chunk steps (a chunk load or populate) while a dungeon
+   * prepares its footprint. Past it one runs even while the server is catching up: a lag spike
+   * traded for progress on busy servers. Lower = faster prepare, more spikes.
+   */
+  public static final RogueConfig PREPARE_HEAVY_STEP_MAX_INTERVAL_TICKS = new RogueConfig("prepareHeavyStepMaxIntervalTicks").withValue(100);
 
   private final String name;
   private String stringValue;
@@ -180,6 +186,9 @@ public class RogueConfig {
     }
     if (!configurationMap.containsKey(GRID_SEED_OFFSET.name)) {
       GRID_SEED_OFFSET.setInt(GRID_SEED_OFFSET.intValue);
+    }
+    if (!configurationMap.containsKey(PREPARE_HEAVY_STEP_MAX_INTERVAL_TICKS.name)) {
+      PREPARE_HEAVY_STEP_MAX_INTERVAL_TICKS.setInt(PREPARE_HEAVY_STEP_MAX_INTERVAL_TICKS.intValue);
     }
   }
 

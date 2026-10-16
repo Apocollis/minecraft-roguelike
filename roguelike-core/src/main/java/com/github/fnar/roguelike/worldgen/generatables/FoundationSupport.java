@@ -53,30 +53,77 @@ public class FoundationSupport extends BaseGeneratable {
    * @return true if a foundation support was placed
    */
   public boolean generateIfNeeded(Coord underFloor) {
-    if (!hasVoidBelow(worldEditor, underFloor)) {
+    Column column = planColumn(underFloor);
+    if (column == null) {
       return false;
+    }
+    columnParts(column).forEach(Runnable::run);
+    return true;
+  }
+
+  /**
+   * Probes the column under {@code underFloor} and returns what {@link #generateIfNeeded} would
+   * build, or null if no support goes here. Reads the world; places nothing.
+   */
+  public Column planColumn(Coord underFloor) {
+    if (!hasVoidBelow(worldEditor, underFloor)) {
+      return null;
     }
 
     int groundY = findGroundY(underFloor);
     if (groundY < MIN_SUPPORT_WORLD_Y) {
-      return false;
+      return null;
     }
 
     int capitalY = underFloor.getY();
     int baseTopY = Math.min(capitalY - 2, groundY + 3);
-    if (baseTopY <= groundY) {
-      // Very short drop: capital + stub only.
+    return new Column(underFloor.copy(), groundY, baseTopY);
+  }
+
+  /**
+   * The column's placement split into parts, in {@link #generateIfNeeded} order: capital and
+   * lanterns, then one part per shaft layer (top down) and the base, or the short stub.
+   */
+  public List<Runnable> columnParts(Column column) {
+    Coord underFloor = column.underFloor;
+    List<Runnable> parts = new ArrayList<>();
+    parts.add(() -> {
       placeCapital(underFloor);
       placeLanterns(underFloor);
-      fillShortColumn(underFloor, groundY);
-      return true;
+    });
+    if (column.isShort()) {
+      // Very short drop: capital + stub only.
+      parts.add(() -> fillShortColumn(underFloor, column.groundY));
+      return parts;
+    }
+    for (int y = underFloor.getY() - 1; y >= column.baseTopY + 1; y--) {
+      int layerY = y;
+      parts.add(() -> fillShaft(underFloor, layerY, layerY));
+    }
+    parts.add(() -> placeBase(underFloor.getX(), underFloor.getZ(), column.groundY + 1, column.baseTopY));
+    return parts;
+  }
+
+  /** A probed foundation column: where it hangs, where the ground is, and where the base starts. */
+  public static final class Column {
+
+    private final Coord underFloor;
+    private final int groundY;
+    private final int baseTopY;
+
+    private Column(Coord underFloor, int groundY, int baseTopY) {
+      this.underFloor = underFloor;
+      this.groundY = groundY;
+      this.baseTopY = baseTopY;
     }
 
-    placeCapital(underFloor);
-    placeLanterns(underFloor);
-    fillShaft(underFloor, capitalY - 1, baseTopY + 1);
-    placeBase(underFloor.getX(), underFloor.getZ(), groundY + 1, baseTopY);
-    return true;
+    public Coord getUnderFloor() {
+      return underFloor.copy();
+    }
+
+    boolean isShort() {
+      return baseTopY <= groundY;
+    }
   }
 
   @Override
@@ -105,38 +152,60 @@ public class FoundationSupport extends BaseGeneratable {
    * axis-aligned, span {@link #MIN_LINTEL_SPAN}–{@link #MAX_LINTEL_SPAN}).
    */
   public void connectLintels(List<Coord> posts) {
-    List<Coord> list = new ArrayList<>(posts);
-    for (int i = 0; i < list.size(); i++) {
-      for (int j = i + 1; j < list.size(); j++) {
-        tryPlaceLintel(list.get(i), list.get(j));
-      }
+    for (Coord[] pair : lintelPairs(posts)) {
+      placeLintel(pair[0], pair[1]);
     }
   }
 
-  private void tryPlaceLintel(Coord a, Coord b) {
+  /**
+   * Post pairs that get a lintel, in {@link #connectLintels} order. Coordinate checks only,
+   * so it is cheap; placing each lintel is the expensive part.
+   */
+  public List<Coord[]> lintelPairs(List<Coord> posts) {
+    List<Coord> list = new ArrayList<>(posts);
+    List<Coord[]> pairs = new ArrayList<>();
+    for (int i = 0; i < list.size(); i++) {
+      for (int j = i + 1; j < list.size(); j++) {
+        if (isLintelPair(list.get(i), list.get(j))) {
+          pairs.add(new Coord[]{list.get(i), list.get(j)});
+        }
+      }
+    }
+    return pairs;
+  }
+
+  private static boolean isLintelPair(Coord a, Coord b) {
     if (a.getY() != b.getY()) {
-      return;
+      return false;
     }
     int dx = Math.abs(a.getX() - b.getX());
     int dz = Math.abs(a.getZ() - b.getZ());
     if ((dx == 0) == (dz == 0)) {
-      return; // must be exactly one axis
+      return false; // must be exactly one axis
     }
     int span = Math.max(dx, dz);
     if (span < MIN_LINTEL_SPAN || span > MAX_LINTEL_SPAN) {
-      return;
+      return false;
     }
+    Direction along = lintelDirection(a, b);
+    Coord start = a.copy().translate(along, SHAFT_HALF + 1);
+    Coord end = b.copy().translate(along.reverse(), SHAFT_HALF + 1);
+    return manhattanHorizontal(start, end) >= 1;
+  }
 
-    Direction along = dx > 0
+  private static Direction lintelDirection(Coord a, Coord b) {
+    return a.getX() != b.getX()
         ? (a.getX() < b.getX() ? Direction.EAST : Direction.WEST)
         : (a.getZ() < b.getZ() ? Direction.SOUTH : Direction.NORTH);
+  }
+
+  /** Places one lintel between a pair from {@link #lintelPairs}. */
+  public void placeLintel(Coord a, Coord b) {
+    Direction along = lintelDirection(a, b);
     Direction[] sides = along.orthogonals();
 
     Coord start = a.copy().translate(along, SHAFT_HALF + 1);
     Coord end = b.copy().translate(along.reverse(), SHAFT_HALF + 1);
-    if (manhattanHorizontal(start, end) < 1) {
-      return;
-    }
 
     int y = a.getY();
     // Top chord against the floor plate (capital height).

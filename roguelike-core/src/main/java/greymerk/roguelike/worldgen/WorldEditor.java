@@ -116,6 +116,39 @@ public interface WorldEditor {
   default void endBulkPlacement() {
   }
 
+  /**
+   * Like {@link #endBulkPlacement()}, but spends at most {@code lightBudgetNanos} on deferred
+   * light; the rest stays queued for later flushes or {@link #drainLight}.
+   */
+  default void endBulkPlacement(long lightBudgetNanos) {
+    endBulkPlacement();
+  }
+
+  /** Light updates still queued from bulk placement. */
+  default int pendingLightCount() {
+    return 0;
+  }
+
+  /** Runs queued light updates for at most {@code budgetNanos}. */
+  default void drainLight(long budgetNanos) {
+  }
+
+  /** Drops queued light updates without running them (abandoned build). */
+  default void clearPendingLight() {
+  }
+
+  /**
+   * Sends changed chunks to watching players. With {@code ignoreResendWindow}, sends every chunk
+   * changed during the build, even ones sent recently (the final send, after light is done).
+   */
+  default void sendChangedChunks(boolean ignoreResendWindow) {
+  }
+
+  /** Light queue counters since the last call, for the stage log; empty if none. */
+  default String takeLightStats() {
+    return "";
+  }
+
   /** False when the backing world is gone or client-side. */
   default boolean isWorldAvailable() {
     return true;
@@ -124,6 +157,14 @@ public interface WorldEditor {
   /** Queue a dungeon job for tick-sliced generation, or run it now if unsupported. */
   default void enqueueDungeonBuild(DungeonBuildJob job) {
     job.runToCompletion();
+  }
+
+  /**
+   * Reserve room to hold {@code chunkCount} footprint chunks loaded until the build job finishes.
+   * Chunks are loaded and held one at a time through the returned reservation.
+   */
+  default ChunkReservation reserveChunks(int chunkCount) {
+    return ChunkReservation.NONE;
   }
 
   /** Persist dungeon AABBs for structure queries. No-op unless the editor has a world. */

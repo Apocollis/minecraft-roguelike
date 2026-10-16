@@ -12,6 +12,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -26,9 +27,11 @@ import greymerk.roguelike.dungeon.settings.SettingIdentifier;
 import greymerk.roguelike.dungeon.settings.SettingsRandom;
 import greymerk.roguelike.dungeon.settings.SettingsResolver;
 import greymerk.roguelike.dungeon.settings.SpawnCriteria;
-import greymerk.roguelike.dungeon.tasks.IDungeonTask;
 import greymerk.roguelike.dungeon.towers.TowerType;
 import greymerk.roguelike.theme.Theme;
+import greymerk.roguelike.worldgen.Bounded;
+import greymerk.roguelike.worldgen.ChunkArea;
+import greymerk.roguelike.worldgen.ChunkFootprint;
 import greymerk.roguelike.worldgen.Coord;
 import greymerk.roguelike.worldgen.VanillaStructure;
 import greymerk.roguelike.worldgen.WorldEditor;
@@ -46,6 +49,7 @@ public class Dungeon {
   public static final int TOPLEVEL = 50;
   public static final int CHUNK_SIZE = 16;
   public static final int BOTTOM_OF_WORLD_HEIGHT = 5;
+  private static final int TOWER_FOOTPRINT_CHUNKS = 4;
 
   public static final String MOD_ID = "roguelike";
   private static final Logger logger = LogManager.getLogger(MOD_ID);
@@ -61,7 +65,6 @@ public class Dungeon {
     this.editor = editor;
     try {
       RogueConfig.reload(false);
-      SettingsResolver.getInstance(editor.getModLoader());
     } catch (Exception e) {
       // do nothing
     }
@@ -324,14 +327,40 @@ public class Dungeon {
         .forEach(levels::add);
   }
 
-  boolean executeTaskSafely(DungeonSettings dungeonSettings, IDungeonTask task) {
-    return performTaskSafely(dungeonSettings, task);
+  void postLevelBoundingBoxes(GenerationPartsEvent eventBus, SettingIdentifier id) {
+    if (eventBus == null) {
+      return;
+    }
+    for (DungeonLevel level : levels) {
+      if (level.layout != null) {
+        eventBus.eventParts(id, level.layout.getLevelBoundingBox());
+      }
+    }
   }
 
-  void postLevelBoundingBoxes(GenerationPartsEvent eventBus, SettingIdentifier id) {
+  /**
+   * Chunks the build needs. Inner: chunks touched by a layout box, plus the tower area around the
+   * origin; this is the write set. The footprint adds a one-chunk margin so every inner chunk (and
+   * every chunk whose populate reaches one) can be populated. Foundation columns stay inside the
+   * bottom level's footprint. Do not widen inner to the margin: the +X/+Z rim could never populate.
+   */
+  ChunkFootprint getFootprint() {
+    Set<Long> all = new LinkedHashSet<>();
+    Set<Long> inner = new LinkedHashSet<>();
+    ChunkArea.addChunkRadius(inner, origin.getX(), origin.getZ(), TOWER_FOOTPRINT_CHUNKS - 1);
+    ChunkArea.addChunkRadius(all, origin.getX(), origin.getZ(), TOWER_FOOTPRINT_CHUNKS);
     for (DungeonLevel level : levels) {
-      postLevelBoundingBoxEventAsync(level, eventBus, id);
+      if (level.layout == null) {
+        continue;
+      }
+      for (Bounded box : level.layout.getBoundingBoxes()) {
+        Coord start = box.getStart();
+        Coord end = box.getEnd();
+        ChunkArea.addBox(inner, start.getX(), start.getZ(), end.getX(), end.getZ(), 0);
+        ChunkArea.addBox(all, start.getX(), start.getZ(), end.getX(), end.getZ(), 1);
+      }
     }
+    return new ChunkFootprint(all, inner);
   }
 
   private int findGroundY(Coord coord) {
@@ -346,23 +375,6 @@ public class Dungeon {
     return y;
   }
 
-
-  private boolean performTaskSafely(DungeonSettings dungeonSettings, IDungeonTask task) {
-    try {
-      task.execute(editor, this, dungeonSettings);
-      return true;
-    } catch (Exception exception) {
-      logger.error("Dungeon task failed for task {}", task.getClass().getName(), exception);
-      return false;
-    }
-  }
-
-  private static void postLevelBoundingBoxEventAsync(DungeonLevel dungeonLevel, GenerationPartsEvent eventBus, SettingIdentifier id) {
-    if (eventBus == null) return;
-    new Thread(() -> {
-      eventBus.eventParts(id, dungeonLevel.layout.getLevelBoundingBox());
-    }).start();
-  }
 
   private Optional<Coord> selectLocation(Random rand, int x, int z) {
     // For grid spawning, center the dungeon at the chunk center
@@ -506,25 +518,68 @@ public class Dungeon {
   }
 
   public void encase(WorldEditor editor) {
+    runAll(encaseSteps(editor));
+  }
+
+  /** One step per layout box per level. */
+  public List<Runnable> encaseSteps(WorldEditor editor) {
+    List<Runnable> steps = new ArrayList<>();
     if (RogueConfig.ENCASE.getBoolean()) {
-      getLevels().forEach(level -> level.filter(editor, Filter.get(Filter.ENCASE)));
+      getLevels().forEach(level -> steps.addAll(level.filterSteps(editor, Filter.get(Filter.ENCASE))));
     }
+    return steps;
   }
 
   public void tunnel(WorldEditor editor) {
-    getLevels().forEach(level -> level.tunnel(editor));
+    runAll(tunnelSteps(editor));
+  }
+
+  /** One step per tunnel. */
+  public List<Runnable> tunnelSteps(WorldEditor editor) {
+    List<Runnable> steps = new ArrayList<>();
+    getLevels().forEach(level -> steps.addAll(level.tunnelSteps(editor)));
+    return steps;
   }
 
   public void generateSegments(WorldEditor editor) {
-    getLevels().forEach(level -> level.generateSegments(editor));
+    runAll(segmentSteps(editor));
+  }
+
+  /** One step per tunnel. */
+  public List<Runnable> segmentSteps(WorldEditor editor) {
+    List<Runnable> steps = new ArrayList<>();
+    getLevels().forEach(level -> steps.addAll(level.segmentSteps(editor)));
+    return steps;
   }
 
   public void generateRooms() {
-    getLevels().forEach(DungeonLevel::generateRooms);
+    runAll(roomSteps());
+  }
+
+  /** One step per room. */
+  public List<Runnable> roomSteps() {
+    List<Runnable> steps = new ArrayList<>();
+    getLevels().forEach(level -> steps.addAll(level.roomSteps()));
+    return steps;
   }
 
   public void linkLevels(WorldEditor editor) {
-    getLevels().stream().reduce(null, (prev, level) -> level.generateLinkers(editor, prev));
+    runAll(linkSteps(editor));
+  }
+
+  /** One step per level, linking it to the level above. */
+  public List<Runnable> linkSteps(WorldEditor editor) {
+    List<Runnable> steps = new ArrayList<>();
+    for (int i = 0; i < levels.size(); i++) {
+      DungeonLevel level = levels.get(i);
+      DungeonLevel previous = i == 0 ? null : levels.get(i - 1);
+      steps.add(() -> level.generateLinkers(editor, previous));
+    }
+    return steps;
+  }
+
+  private static void runAll(List<Runnable> steps) {
+    steps.forEach(Runnable::run);
   }
 
   public void generateTower(WorldEditor editor, DungeonSettings settings) {
@@ -535,6 +590,13 @@ public class Dungeon {
   }
 
   public void applyFilters(WorldEditor editor) {
-    getLevels().forEach(level -> level.applyFilters(editor));
+    runAll(filterSteps(editor));
+  }
+
+  /** One step per filter per layout box per level. */
+  public List<Runnable> filterSteps(WorldEditor editor) {
+    List<Runnable> steps = new ArrayList<>();
+    getLevels().forEach(level -> steps.addAll(level.applyFilterSteps(editor)));
+    return steps;
   }
 }

@@ -142,7 +142,7 @@ Stages in `DungeonStage` order. Registry (`DungeonTaskRegistry`) binds one task 
 | LOOT | `DungeonTaskLoot` | Chests |
 | AFTER | `DungeonTaskSupports` | Foundations / pillars (`FoundationSupport`) |
 
-`DungeonGenerationScheduler` drains a per-world queue on `TickEvent.WorldTickEvent` END with **15 ms** budget. One task may still overrun. Unfinished jobs **drop on world unload**.
+`DungeonGenerationScheduler` drains a per-world queue on `TickEvent.WorldTickEvent` END. The budget (3–15 ms) is sized once per server tick from the server's idle time and shared by all worlds (`BuildPacer`, `TickBudget`); no new steps run while the server is catching up. `PREPARE_CHUNKS` (`ChunkPreparePolicy`) loads the footprint with populates suppressed, then populates chunks one per heavy step. After the last stage the job stays queued until deferred light drains (`DRAIN_LIGHT` phase), then releases its chunks. One step may still overrun. Unfinished jobs **drop on world unload**. Details: [generation.md](generation.md).
 
 **Critical:** tick-sliced completion does **not** return from a single `Dungeon.generate()`. Hooks on `generate()` RETURN (Tweaks box registration) never fire. Boxes are registered in `complete()`.
 
@@ -163,11 +163,11 @@ Core never touches `World`. All mutation goes through `WorldEditor`.
 
 `WorldEditor1_12` maps brushes to 1.12 `IBlockState`, implements:
 
-- `setBlock` / bulk `chunk.setBlockState` for air and opaque cubes
+- `setBlock` / bulk `chunk.setBlockState` for every state without a tile entity that is not a liquid; deferred, deduplicated light; chunk packets to watching players only
 - Chests, spawners, loot tables, biome queries
 - `enqueueDungeonBuild` → scheduler (client/unavailable world: run to completion)
 - `registerDungeonStructure` → `RoguelikeDungeonSavedData`
-- `findNearestStructure` → vanilla `ChunkProviderServer.getNearestStructurePos`
+- `findNearestStructure` → per-chunk `canSpawnStructureAtCoords` scan within the configured distance (`VanillaStructureScanner`)
 
 Brushes (`BlockBrush`, `SingleBlockBrush`, weighted/jumble/layers/…) are core types; 1.12 mappers live under `com.github.fnar.minecraft.**`.
 
@@ -235,7 +235,7 @@ Existing cfg **string lists are not merged** when Java defaults change. Devbox v
 
 ## 10. Cross-cutting
 
-**Performance:** tick budget; bulk block set; mapper cache. `ROOMS` / `FILTERS` / `AFTER` can still hitch.
+**Performance:** shared per-server-tick budget with a lag gate; bulk block set with deferred light; one chunk load or populate per heavy step; cached settings; mapper cache. A single large room step can still hitch.
 
 **Safety:** generation exceptions log and mark the job failed; populate is wrapped in `SafeRunnable`.
 

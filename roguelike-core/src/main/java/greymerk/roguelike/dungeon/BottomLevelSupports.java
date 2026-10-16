@@ -6,14 +6,17 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import greymerk.roguelike.dungeon.base.BaseRoom;
 import greymerk.roguelike.dungeon.layout.DungeonNode;
 import greymerk.roguelike.dungeon.layout.DungeonTunnel;
 import greymerk.roguelike.dungeon.layout.LevelLayout;
+import greymerk.roguelike.dungeon.tasks.DungeonStep;
 import greymerk.roguelike.theme.Theme;
 import greymerk.roguelike.worldgen.Coord;
 import greymerk.roguelike.worldgen.WorldEditor;
@@ -40,20 +43,24 @@ public final class BottomLevelSupports {
   }
 
   public static void generate(WorldEditor editor, DungeonLevel level) {
+    DungeonStep.runAll(steps(editor, level));
+  }
+
+  /**
+   * One step per post anchor (room corners, wall midpoints, interior grid, corridor points),
+   * then one step that connects the placed posts with lintels and logs the totals.
+   * Anchors are listed up front from the layout; world reads happen inside the steps.
+   */
+  public static List<Runnable> steps(WorldEditor editor, DungeonLevel level) {
+    List<Runnable> steps = new ArrayList<>();
     LevelLayout layout = level.getLayout();
     if (layout == null) {
       logger.warn("FoundationSupport skipped: bottom level has no layout");
-      return;
+      return steps;
     }
 
     Theme theme = level.getSettings().getTheme();
-    FoundationSupport support = FoundationSupport.newSupport(editor).withTheme(theme);
-    Set<Long> placedKeys = new HashSet<>();
-    List<Coord> placedPosts = new ArrayList<>();
-    int attempted = 0;
-    int placedCount = 0;
-    int skippedNoFloor = 0;
-    int skippedNoVoid = 0;
+    Placement placement = new Placement(editor, FoundationSupport.newSupport(editor).withTheme(theme));
 
     for (DungeonNode node : layout.getNodes()) {
       BaseRoom room = node.getRoom();
@@ -62,6 +69,7 @@ public final class BottomLevelSupports {
       }
       int extent = Math.max(0, room.getSize() - 2);
       Coord center = node.getPosition();
+      int levelY = center.getY();
 
       Coord[] structural = new Coord[]{
           center.copy().north(extent).west(extent),
@@ -74,29 +82,13 @@ public final class BottomLevelSupports {
           center.copy().east(extent),
       };
       for (Coord at : structural) {
-        attempted++;
-        int result = tryPlace(editor, support, at, center.getY(), placedKeys, placedPosts);
-        if (result > 0) {
-          placedCount++;
-        } else if (result == -1) {
-          skippedNoFloor++;
-        } else if (result == -2) {
-          skippedNoVoid++;
-        }
+        steps.add(placement.anchorStep(at, levelY));
       }
 
       for (int dx = -extent; dx <= extent; dx += GRID_SPACING) {
         for (int dz = -extent; dz <= extent; dz += GRID_SPACING) {
           Coord at = center.copy().translate(dx, 0, dz);
-          attempted++;
-          int result = tryPlace(editor, support, at, center.getY(), placedKeys, placedPosts);
-          if (result > 0) {
-            placedCount++;
-          } else if (result == -1) {
-            skippedNoFloor++;
-          } else if (result == -2) {
-            skippedNoVoid++;
-          }
+          steps.add(placement.anchorStep(at, levelY));
         }
       }
     }
@@ -114,56 +106,119 @@ public final class BottomLevelSupports {
               : new int[]{length / 2};
       int levelY = axis.get(0).getY();
       for (int index : indices) {
-        attempted++;
-        int result = tryPlace(editor, support, axis.get(index), levelY, placedKeys, placedPosts);
-        if (result > 0) {
-          placedCount++;
-        } else if (result == -1) {
-          skippedNoFloor++;
-        } else if (result == -2) {
-          skippedNoVoid++;
-        }
+        Coord at = axis.get(index);
+        steps.add(placement.anchorStep(at, levelY));
       }
     }
 
-    support.connectLintels(placedPosts);
-
-    logger.info(
-        "FoundationSupport on level index 9: placed={}, attempted={}, skippedNoFloor={}, skippedNoVoid={}",
-        placedCount, attempted, skippedNoFloor, skippedNoVoid);
+    steps.add(placement.lintelStep());
+    return steps;
   }
 
   /**
-   * @return 1 placed, 0 duplicate, -1 no floor underside, -2 no void below
+   * Per-build state shared by the steps of one {@link #steps} list.
+   *
+   * <p>An anchor step probes its column and returns the column's parts (capital, one step per shaft
+   * layer, base) as follow-ups, so they run before the next anchor probes, as before slicing. The
+   * lintel step finds the matching post pairs and returns one follow-up per lintel, then the summary.
    */
-  private static int tryPlace(
-      WorldEditor editor,
-      FoundationSupport support,
-      Coord xzAnchor,
-      int levelY,
-      Set<Long> placedKeys,
-      List<Coord> placedPosts) {
-    Coord floor = findFloorUnderside(editor, xzAnchor.getX(), levelY, xzAnchor.getZ());
-    if (floor == null) {
-      return -1;
+  private static final class Placement {
+
+    private final WorldEditor editor;
+    private final FoundationSupport support;
+    private final Set<Long> placedKeys = new HashSet<>();
+    private final List<Coord> placedPosts = new ArrayList<>();
+    private int attempted;
+    private int placedCount;
+    private int skippedNoFloor;
+    private int skippedNoVoid;
+
+    Placement(WorldEditor editor, FoundationSupport support) {
+      this.editor = editor;
+      this.support = support;
     }
 
-    long key = pack(floor.getX(), floor.getZ());
-    if (!placedKeys.add(key)) {
-      return 0;
+    DungeonStep anchorStep(Coord at, int levelY) {
+      return new DungeonStep() {
+        private List<DungeonStep> parts = Collections.emptyList();
+
+        @Override
+        public void run() {
+          attempted++;
+          FoundationSupport.Column column = planAt(at, levelY);
+          if (column == null) {
+            return;
+          }
+          placedCount++;
+          placedPosts.add(column.getUnderFloor());
+          parts = support.columnParts(column).stream()
+              .map(part -> DungeonStep.of("foundation column at " + column.getUnderFloor(), part))
+              .collect(Collectors.toList());
+        }
+
+        @Override
+        public List<DungeonStep> followUps() {
+          return parts;
+        }
+
+        @Override
+        public String label() {
+          return "foundation anchor at " + at;
+        }
+      };
     }
 
-    Coord underFloor = floor.copy().down();
-    if (!FoundationSupport.hasVoidBelow(editor, underFloor)) {
-      return -2;
+    DungeonStep lintelStep() {
+      return new DungeonStep() {
+        private final List<DungeonStep> parts = new ArrayList<>();
+
+        @Override
+        public void run() {
+          for (Coord[] pair : support.lintelPairs(placedPosts)) {
+            parts.add(DungeonStep.of("lintel " + pair[0] + " to " + pair[1], () -> support.placeLintel(pair[0], pair[1])));
+          }
+          parts.add(DungeonStep.of("foundation summary", () -> logger.info(
+              "FoundationSupport on level index 9: placed={}, attempted={}, skippedNoFloor={}, skippedNoVoid={}",
+              placedCount, attempted, skippedNoFloor, skippedNoVoid)));
+        }
+
+        @Override
+        public List<DungeonStep> followUps() {
+          return parts;
+        }
+
+        @Override
+        public String label() {
+          return "foundation lintel pairs";
+        }
+      };
     }
 
-    if (!support.generateIfNeeded(underFloor)) {
-      return -2;
-    }
+    /** Same checks and order as before slicing; returns the column to build, or null. */
+    private FoundationSupport.Column planAt(Coord xzAnchor, int levelY) {
+      Coord floor = findFloorUnderside(editor, xzAnchor.getX(), levelY, xzAnchor.getZ());
+      if (floor == null) {
+        skippedNoFloor++;
+        return null;
+      }
 
-    placedPosts.add(underFloor);
-    return 1;
+      long key = pack(floor.getX(), floor.getZ());
+      if (!placedKeys.add(key)) {
+        return null;
+      }
+
+      Coord underFloor = floor.copy().down();
+      if (!FoundationSupport.hasVoidBelow(editor, underFloor)) {
+        skippedNoVoid++;
+        return null;
+      }
+
+      FoundationSupport.Column column = support.planColumn(underFloor);
+      if (column == null) {
+        skippedNoVoid++;
+      }
+      return column;
+    }
   }
 
   /**

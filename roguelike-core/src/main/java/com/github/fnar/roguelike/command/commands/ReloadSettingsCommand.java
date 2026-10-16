@@ -12,6 +12,7 @@ public class ReloadSettingsCommand extends BaseRoguelikeCommand {
 
   @Override
   public boolean onRun() {
+    SettingsResolver.invalidate();
     SettingsResolver.getInstance(context.getModLoader());
     return true;
   }
