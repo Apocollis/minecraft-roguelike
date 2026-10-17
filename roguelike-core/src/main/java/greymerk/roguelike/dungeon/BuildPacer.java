@@ -64,6 +64,11 @@ public final class BuildPacer {
     return current;
   }
 
+  /** Ticks since a heavy chunk step was last granted, while one was wanted and refused. */
+  public int heavyWaitTicks() {
+    return heavyWaitTicks;
+  }
+
   static TickBudget budgetFor(double idleMs, double lastBuildMs, double lastTickMs, int heavyWaitTicks, int maxHeavyIntervalTicks) {
     boolean behind = idleMs < BEHIND_IDLE_MS;
     double headroomMs = idleMs + lastBuildMs;

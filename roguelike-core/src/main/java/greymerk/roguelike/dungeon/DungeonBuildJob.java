@@ -67,6 +67,8 @@ public class DungeonBuildJob {
   private long stageFlushNanos;
   private long stageLongestFlushNanos;
   private long stageLongestWorldTickNanos;
+  private int stageTicksCapped;
+  private int stageTicksHeavyRestricted;
 
   /** Steps of the current task; the job owns them because task instances are shared. */
   private List<Runnable> taskSteps;
@@ -130,6 +132,13 @@ public class DungeonBuildJob {
       logger.warn("Dropping dungeon generation for id {} at {}; world is unavailable.", settings.getId(), coord);
       abandon();
       return false;
+    }
+
+    if (budget.isCapped()) {
+      stageTicksCapped++;
+    }
+    if (budget.isHeavyRestricted()) {
+      stageTicksHeavyRestricted++;
     }
 
     editor.beginBulkPlacement();
@@ -291,7 +300,7 @@ public class DungeonBuildJob {
     String light = editor.takeLightStats();
     logger.info(
         "Completed dungeon stage [{}/{}] {}: work {}ms (longest single step {}ms), end-of-tick flush {}ms (longest {}ms), "
-            + "largest world tick {}ms, elapsed {}ms{}",
+            + "largest world tick {}ms, elapsed {}ms, ticks the shared budget was trimmed {}, ticks heavy work was held back {}{}",
         stageIndex + 1,
         DungeonStage.values().length,
         stage,
@@ -301,6 +310,8 @@ public class DungeonBuildJob {
         stageLongestFlushNanos / NANOS_PER_MS,
         stageLongestWorldTickNanos / NANOS_PER_MS,
         System.currentTimeMillis() - stageStartMs,
+        stageTicksCapped,
+        stageTicksHeavyRestricted,
         light.isEmpty() ? "" : ", " + light);
     stageIndex++;
     taskIndex = 0;
@@ -314,6 +325,8 @@ public class DungeonBuildJob {
     stageFlushNanos = 0;
     stageLongestFlushNanos = 0;
     stageLongestWorldTickNanos = 0;
+    stageTicksCapped = 0;
+    stageTicksHeavyRestricted = 0;
   }
 
   private void releaseChunks() {

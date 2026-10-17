@@ -29,7 +29,7 @@ import greymerk.roguelike.ItemTooltip;
 import greymerk.roguelike.command.CommandWhereAmI;
 import greymerk.roguelike.dungeon.Dungeon;
 
-@Mod(modid = "roguelike", name = "Roguelike Dungeons: Depths -- Arcana Edition", version = Roguelike.version, acceptableRemoteVersions = "*")
+@Mod(modid = "roguelike", name = "Roguelike Dungeons: Depths -- Arcana Edition", version = Roguelike.version, acceptableRemoteVersions = "*", dependencies = "after:chunksteward")
 public class Roguelike {
 
   public static final Logger LOGGER = LogManager.getLogger(Dungeon.MOD_ID);
@@ -77,16 +77,22 @@ public class Roguelike {
   }
 
   /**
-   * lazychunks defers populates past its own tick budget unless the chunk is held by a ticket from a
-   * mod in its {@code populate.ticketExemptMods}. Without "roguelike" there, dungeon footprint
-   * populates can be deferred until after the build. Read by reflection: no compile dependency.
+   * Chunk Steward (and the older lazychunks jar) defers populates past its own tick budget unless
+   * the chunk is held by a ticket from a mod in {@code populate.ticketExemptMods}. Without
+   * "roguelike" there, dungeon footprint populates can be deferred until after the build. Each
+   * loaded mod is checked on its own. Read by reflection: no compile dependency.
    */
   private static void checkLazyChunksExemption() {
-    if (!Loader.isModLoaded("lazychunks")) {
+    warnIfTicketExemptMissing("chunksteward", "com.apocollis.chunksteward.config.ChunkStewardConfig");
+    warnIfTicketExemptMissing("lazychunks", "com.apocollis.lazychunks.config.LazyChunksConfig");
+  }
+
+  private static void warnIfTicketExemptMissing(String modid, String configClass) {
+    if (!Loader.isModLoaded(modid)) {
       return;
     }
     try {
-      Class<?> config = Class.forName("com.apocollis.lazychunks.config.LazyChunksConfig");
+      Class<?> config = Class.forName(configClass);
       Object populate = config.getField("populate").get(null);
       Object mods = populate.getClass().getField("ticketExemptMods").get(populate);
       if (mods instanceof String[]) {
@@ -96,9 +102,9 @@ public class Roguelike {
           }
         }
       }
-      LOGGER.warn("lazychunks is installed but '{}' is not in its populate.ticketExemptMods; dungeon footprint populates may be deferred until after the build.", Dungeon.MOD_ID);
+      LOGGER.warn("{} is installed but '{}' is not in its populate.ticketExemptMods; dungeon footprint populates may be deferred until after the build.", modid, Dungeon.MOD_ID);
     } catch (ReflectiveOperationException | RuntimeException e) {
-      LOGGER.warn("Could not read lazychunks' populate.ticketExemptMods ({}); dungeon footprint populates may be deferred.", e.toString());
+      LOGGER.warn("Could not read {}'s populate.ticketExemptMods ({}); dungeon footprint populates may be deferred.", modid, e.toString());
     }
   }
 }

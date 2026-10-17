@@ -11,7 +11,7 @@ There is **no MixinGradle refmap**. Mixins targeting vanilla must use **SRG name
 | `MixinCommandLocate` | `CommandLocate` | Tab complete `RoguelikeDungeon` (`func_184883_a`) |
 | `MixinChunkProviderServer` | `ChunkProviderServer` | Locate + `isInsideStructure`; priority **1100** so HEAD runs before Tweaks (1000) |
 | `MixinMapGenStructureInvoker` / `MixinMapGenBaseAccessor` | `MapGenStructure` / `MapGenBase` | Bounded structure-distance scan |
-| `MixinChunkPopulateGate` | `Chunk.populate(IChunkGenerator)` (`func_186034_a`) | Cancels populates while a dungeon footprint chunk loads; priority **1100** so it runs before lazychunks' HEAD on the same method |
+| `MixinChunkPopulateGate` | `Chunk.populate(IChunkGenerator)` (`func_186034_a`) | Cancels populates while a dungeon footprint chunk loads; priority **1100** so it runs before Chunk Steward's HEAD on the same method (default priority 1000; the older lazychunks jar used that slot) |
 | `MixinChunkPopulateInvoker` | `Chunk` | Calls the single-chunk `populate(IChunkGenerator)`; the two-arg one also populates three neighbours |
 
 ## Rules that cost us crashes

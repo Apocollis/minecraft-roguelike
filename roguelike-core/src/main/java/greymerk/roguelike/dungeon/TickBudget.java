@@ -22,6 +22,8 @@ public final class TickBudget {
   private long spentNanos;
   private boolean heavyUsed;
   private boolean heavyWanted;
+  private boolean capped;
+  private boolean heavyRestricted;
 
   TickBudget(long budgetNanos, boolean behind, boolean heavyAllowed, boolean heavyForced) {
     this(false, budgetNanos, behind, heavyAllowed, heavyForced);
@@ -51,6 +53,39 @@ public final class TickBudget {
 
   public long remainingNanos() {
     return unlimited ? Long.MAX_VALUE : remainingNanos;
+  }
+
+  /**
+   * Lowers the remaining budget to at most {@code maxNanos} (zero is allowed). A value that does
+   * not shrink the budget is not a cap. No effect when unlimited.
+   */
+  public void capNanos(long maxNanos) {
+    if (unlimited) {
+      return;
+    }
+    long cappedTo = Math.max(0L, maxNanos);
+    if (cappedTo < remainingNanos) {
+      remainingNanos = cappedTo;
+      capped = true;
+    }
+  }
+
+  /** True when {@link #capNanos} has lowered this tick's budget. */
+  public boolean isCapped() {
+    return capped;
+  }
+
+  /**
+   * Refuses {@link #tryHeavy()} unless this tick's heavy step is already forced by the minimum
+   * heavy-step rate. The refusal still counts as wanted, so that rate keeps advancing.
+   */
+  public void restrictHeavy() {
+    heavyRestricted = true;
+  }
+
+  /** True after {@link #restrictHeavy()} on this tick. */
+  public boolean isHeavyRestricted() {
+    return heavyRestricted;
   }
 
   public void spend(long nanos) {
@@ -88,7 +123,7 @@ public final class TickBudget {
       heavyUsed = true;
       return true;
     }
-    if (heavyUsed || !(heavyAllowed || heavyForced)) {
+    if (heavyUsed || !(heavyAllowed || heavyForced) || (heavyRestricted && !heavyForced)) {
       heavyWanted = true;
       return false;
     }

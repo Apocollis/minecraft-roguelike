@@ -15,9 +15,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * {@code populate(IChunkGenerator)} ({@code func_186034_a}) is the single per-chunk populate that
  * the two-arg {@code populate(provider, generator)} calls on the chunk and its neighbours.
  *
- * <p>Priority 1100 so this HEAD runs before lazychunks' HEAD on the same method: if lazychunks
- * entered first it would count a populate that never ran and treat later populates that tick as
- * cascades.
+ * <p>Priority 1100 so this HEAD runs before Chunk Steward's HEAD on the same method (default
+ * priority 1000; the older lazychunks jar used the same slot). If that mixin entered first it
+ * would count a populate that never ran and treat later populates that tick as cascades.
  */
 @Mixin(value = Chunk.class, remap = false, priority = 1100)
 public abstract class MixinChunkPopulateGate {
