@@ -28,7 +28,13 @@ Code defaults live in `RogueConfig`. **Devbox often overrides them.** Missing ke
 | `stewardMinSliceMs` | 8 | With Chunk Steward, in the full-TPS band (measured TPS ≥ 19.5, or load factor ≥ 0.9): floor of the per-tick slice, in ms. |
 | `stewardMaxSliceMs` | 40 | Ceiling of that slice. The slice is `clamp(headroom, min, max)`. An existing cfg value is kept; this default applies only when the key is absent. |
 | `stewardPausedSliceMs` | 2 | Slice on a paused Steward tick. A catch-up tick (no sleep before it) stays at 0. |
-| `stewardMaxIntervalTicks` | 20 | With Chunk Steward: longest wait between a heavy chunk step and between normal steps. Minimum 1. |
+| `stewardMaxIntervalTicks` | 20 | With Chunk Steward in backoff: longest wait between a heavy chunk step and between normal steps. Minimum 1. |
+| `stewardOverspendSliceMs` | 42 | With Chunk Steward, while a dungeon is queued and not in backoff: fixed per-tick budget, in ms, shared by prepare, placement, and light drain. Applies on catch-up ticks. |
+| `stewardMaxTickWorkMs` | 200 | Dungeon work, in ms, past which no new step starts. Five ticks over this leave overspend. |
+| `stewardFreezeTps` | 10 | Measured TPS below which a server tick counts toward leaving overspend. |
+| `stewardFreezeSeconds` | 10 | Consecutive seconds of server ticks under `stewardFreezeTps` before backoff. Not wall-clock time. |
+| `stewardResumeTps` | 15 | Measured TPS at or above which a server tick counts toward returning to overspend. |
+| `stewardResumeSeconds` | 5 | Consecutive seconds of server ticks at or above `stewardResumeTps` before overspend resumes. |
 
 ## Other keys often customized in Arcana
 

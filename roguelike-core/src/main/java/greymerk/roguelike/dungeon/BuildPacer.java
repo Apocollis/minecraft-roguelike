@@ -69,6 +69,11 @@ public final class BuildPacer {
     return heavyWaitTicks;
   }
 
+  /** Dungeon work, in ms, recorded at the end of the previous server tick. Zero before the first end. */
+  public double previousBuildMs() {
+    return lastBuildMs;
+  }
+
   static TickBudget budgetFor(double idleMs, double lastBuildMs, double lastTickMs, int heavyWaitTicks, int maxHeavyIntervalTicks) {
     boolean behind = idleMs < BEHIND_IDLE_MS;
     double headroomMs = idleMs + lastBuildMs;

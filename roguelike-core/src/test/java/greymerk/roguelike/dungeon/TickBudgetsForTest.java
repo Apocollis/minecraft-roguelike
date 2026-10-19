@@ -22,4 +22,21 @@ public final class TickBudgetsForTest {
     budget.useFullTpsSlice(nanos);
     return budget;
   }
+
+  /** A catch-up tick: budget 0, heavy steps refused. */
+  public static TickBudget behind() {
+    return new TickBudget(0L, true, false, false);
+  }
+
+  /** A catch-up tick whose heavy step is forced by the minimum rate. */
+  public static TickBudget behindForced() {
+    return new TickBudget(0L, true, false, true);
+  }
+
+  /** A catch-up tick that still spends an overspend slice. */
+  public static TickBudget overspendBehind(long sliceNanos, long maxWorkNanos) {
+    TickBudget budget = behind();
+    budget.useOverspendSlice(sliceNanos, maxWorkNanos);
+    return budget;
+  }
 }

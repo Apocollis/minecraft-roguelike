@@ -72,6 +72,8 @@ public class DungeonBuildJob {
   private int stageTicks;
   private long stageSliceNanos;
   private int stageTicksFullTps;
+  private int stageTicksOverspend;
+  private int stageTicksBackoff;
   private TickBudget stageLastBudget;
   private TickBudget activeBudget;
 
@@ -193,7 +195,7 @@ public class DungeonBuildJob {
     noteStageBudget();
 
     boolean force = pausedTicks >= budget.pauseForceTicks();
-    boolean blocked = budget.isBehind()
+    boolean blocked = (budget.isBehind() && !budget.isOverspend())
         || budget.remainingNanos() <= 0
         || editor.pendingLightCount() > LIGHT_BACKLOG_LIMIT;
     if (blocked && !force) {
@@ -312,8 +314,8 @@ public class DungeonBuildJob {
     String light = editor.takeLightStats();
     logger.info(
         "Completed dungeon stage [{}/{}] {}: work {}ms (longest single step {}ms), end-of-tick flush {}ms (longest {}ms), "
-            + "largest world tick {}ms, elapsed {}ms, average slice {}ms, ticks at full TPS {}, "
-            + "ticks the shared budget was trimmed {}, ticks heavy work was held back {}{}",
+            + "largest world tick {}ms, elapsed {}ms, average slice {}ms, mode {} (overspend {} ticks, backoff {} ticks), "
+            + "ticks at full TPS {}, ticks the shared budget was trimmed {}, ticks heavy work was held back {}{}",
         stageIndex + 1,
         DungeonStage.values().length,
         stage,
@@ -324,6 +326,9 @@ public class DungeonBuildJob {
         stageLongestWorldTickNanos / NANOS_PER_MS,
         System.currentTimeMillis() - stageStartMs,
         stageTicks == 0 ? 0L : stageSliceNanos / (stageTicks * NANOS_PER_MS),
+        stageMode(),
+        stageTicksOverspend,
+        stageTicksBackoff,
         stageTicksFullTps,
         stageTicksCapped,
         stageTicksHeavyRestricted,
@@ -345,6 +350,8 @@ public class DungeonBuildJob {
     stageTicks = 0;
     stageSliceNanos = 0;
     stageTicksFullTps = 0;
+    stageTicksOverspend = 0;
+    stageTicksBackoff = 0;
     stageLastBudget = null;
   }
 
@@ -360,6 +367,24 @@ public class DungeonBuildJob {
     if (budget.isFullTps()) {
       stageTicksFullTps++;
     }
+    if (budget.isOverspend()) {
+      stageTicksOverspend++;
+    } else if (budget.isBackoff()) {
+      stageTicksBackoff++;
+    }
+  }
+
+  private String stageMode() {
+    if (stageTicksOverspend > 0 && stageTicksBackoff == 0) {
+      return "OVERSPEND";
+    }
+    if (stageTicksBackoff > 0 && stageTicksOverspend == 0) {
+      return "BACKOFF";
+    }
+    if (stageTicksOverspend > 0) {
+      return "MIXED";
+    }
+    return "OPEN";
   }
 
   private void releaseChunks() {

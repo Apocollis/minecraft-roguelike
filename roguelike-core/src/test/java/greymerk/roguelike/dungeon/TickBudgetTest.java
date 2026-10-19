@@ -122,6 +122,45 @@ public class TickBudgetTest {
   }
 
   @Test
+  public void overspendOnACatchUpTickSpendsTheFixedSlice() {
+    TickBudget budget = new TickBudget(0L, true, false, false);
+    budget.useOverspendSlice(42 * MS, 200 * MS);
+
+    assertThat(budget.isBehind()).isTrue();
+    assertThat(budget.isOverspend()).isTrue();
+    assertThat(budget.isFullTps()).isFalse();
+    assertThat(budget.remainingNanos()).isEqualTo(42 * MS);
+    assertThat(budget.sliceNanos()).isEqualTo(42 * MS);
+    assertThat(budget.tryHeavy()).isTrue();
+    assertThat(budget.tryHeavy()).isTrue();
+    assertThat(budget.drainNanos()).isEqualTo(42 * MS);
+
+    budget.spend(10 * MS);
+    budget.useOverspendSlice(42 * MS, 200 * MS);
+    assertThat(budget.remainingNanos()).isEqualTo(32 * MS);
+    assertThat(budget.drainNanos()).isEqualTo(32 * MS);
+  }
+
+  @Test
+  public void catchUpWithoutOverspendStillRefusesHeavyAndDrainsTwoMs() {
+    TickBudget budget = new TickBudget(0L, true, false, false);
+
+    assertThat(budget.tryHeavy()).isFalse();
+    assertThat(budget.drainNanos()).isEqualTo(2 * MS);
+  }
+
+  @Test
+  public void overspendCeilingStopsFurtherWork() {
+    TickBudget budget = new TickBudget(0L, true, false, false);
+    budget.useOverspendSlice(42 * MS, 200 * MS);
+    budget.spend(200 * MS);
+
+    assertThat(budget.remainingNanos()).isZero();
+    assertThat(budget.tryHeavy()).isFalse();
+    assertThat(budget.drainNanos()).isEqualTo(2 * MS);
+  }
+
+  @Test
   public void restrictHeavyRefusesUnlessForcedAndCountsAsWanted() {
     TickBudget refused = new TickBudget(15 * MS, false, true, false);
     refused.restrictHeavy();

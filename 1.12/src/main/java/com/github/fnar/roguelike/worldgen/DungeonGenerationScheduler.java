@@ -159,15 +159,33 @@ public class DungeonGenerationScheduler {
   }
 
   /**
-   * One pause decision per server tick, taken by the first world that still has a job. A later
-   * dimension applies that same decision. In the full-TPS band the slice is Chunk Steward's
-   * average headroom and player chunk generation does not pause the build. Below that, the slice
-   * is the time still left in this tick.
+   * One pacing decision per server tick, taken by the first world that still has a job. A later
+   * dimension applies that same decision. Overspend spends a fixed slice, including on a catch-up
+   * tick. Backoff uses the full-TPS headroom slice or the time still left in the tick.
    */
   private static void applySteward(TickBudget budget) {
     if (!StewardPacing.available()) {
       return;
     }
+    double measuredTps = StewardPacing.hasMeasuredTps() ? StewardPacing.measuredTps() : -1.0;
+    long maxWorkNanos = (long) (Math.max(0.0, RogueConfig.STEWARD_MAX_TICK_WORK_MS.getDouble()) * 1_000_000.0);
+    int freezeTicks = Math.max(1, RogueConfig.STEWARD_FREEZE_SECONDS.getInt()) * 20;
+    int resumeTicks = Math.max(1, RogueConfig.STEWARD_RESUME_SECONDS.getInt()) * 20;
+    stewardPace.noteServerTick(
+        serverTickId,
+        measuredTps,
+        Math.round(pacer.previousBuildMs() * 1_000_000.0),
+        maxWorkNanos,
+        RogueConfig.STEWARD_FREEZE_TPS.getDouble(),
+        freezeTicks,
+        RogueConfig.STEWARD_RESUME_TPS.getDouble(),
+        resumeTicks);
+    if (stewardPace.isOverspend()) {
+      long sliceNanos = (long) (Math.max(0.0, RogueConfig.STEWARD_OVERSPEND_SLICE_MS.getDouble()) * 1_000_000.0);
+      budget.useOverspendSlice(sliceNanos, maxWorkNanos);
+      return;
+    }
+    budget.markBackoff();
     double loadFactor = StewardPacing.loadFactor();
     double minLoadFactor = RogueConfig.STEWARD_MIN_LOAD_FACTOR.getDouble();
     boolean generating = StewardPacing.generatingChunks();

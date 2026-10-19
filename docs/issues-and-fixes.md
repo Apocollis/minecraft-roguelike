@@ -12,6 +12,12 @@
 
 **Fix:** A full-TPS tick that is not behind runs several heavy steps while its slice shrinks, and the light drain may use whatever slice placement did not. Loads and populates interleave once a chunk's three neighbours are loaded. The chunks nearest a player go first. Below the full-TPS band, and on a catch-up tick, the build still spreads: one heavy step on the interval, light drain 2 ms.
 
+## Overspend still collapses to a 1 ms slice
+
+**Cause:** On a server already near 45 ms/tick, a dungeon slice over 50 ms makes the next tick a catch-up (`behind`, budget 0). `useFullTpsSlice` and `drainNanos()` both honor that flag, so the slice stays 0 and light drains 2 ms. The same work also drops measured TPS under 19.5, which pauses the following awake tick to 2 ms. `PREPARE_CHUNKS` and `ENCASE` on 2026-10-18 still took 47 s and 25 s.
+
+**Fix:** While Chunk Steward is loaded and the server is not in a collapse, each tick spends `stewardOverspendSliceMs` (default 42) even when `behind` is true. Prepare, placement, and light drain share it. Overspend stops after measured TPS stays under 10 for the freeze window, or after five ticks of more than 200 ms of dungeon work, and the headroom rules apply until TPS holds at 15 or above. A hitch during the dungeon is expected. Without Chunk Steward the pacer budget is unchanged.
+
 ## Crash: `ConcurrentModificationException` in `sendChangedChunks`
 
 **Cause:** The periodic flush iterates `dirtyChunks`. After sending a chunk it called `dirtyChunks.remove(chunkPos)` and then `it.remove()`. The set was changed under the iterator, so the first chunk sent during a dungeon build crashed the server. The final send iterates `changedChunks` instead, so the direct remove was only redundant there: that path clears `changedChunks`, `dirtyChunks`, and `lastSentTick` after the loop.

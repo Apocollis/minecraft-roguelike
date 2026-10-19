@@ -25,6 +25,9 @@ public final class TickBudget {
   private boolean capped;
   private boolean heavyRestricted;
   private boolean fullTps;
+  private boolean overspend;
+  private boolean backoff;
+  private long maxWorkNanos = Long.MAX_VALUE;
   private long sliceNanos;
   private int pauseForceTicks = DungeonBuildJob.MAX_PAUSE_TICKS;
 
@@ -56,7 +59,13 @@ public final class TickBudget {
   }
 
   public long remainingNanos() {
-    return unlimited ? Long.MAX_VALUE : remainingNanos;
+    if (unlimited) {
+      return Long.MAX_VALUE;
+    }
+    if (overspend && spentNanos >= maxWorkNanos) {
+      return 0L;
+    }
+    return remainingNanos;
   }
 
   /**
@@ -89,6 +98,36 @@ public final class TickBudget {
     fullTps = true;
     remainingNanos = Math.max(0L, nanos);
     sliceNanos = remainingNanos;
+  }
+
+  /**
+   * Replaces this tick's budget with a fixed overspend slice, including on a catch-up tick.
+   * A second call in the same tick does nothing, so another world keeps spending what the first left.
+   * No effect when unlimited. Does not mark the tick as a full-TPS headroom slice.
+   */
+  public void useOverspendSlice(long sliceNanos, long maxWorkNanos) {
+    if (unlimited || overspend) {
+      return;
+    }
+    overspend = true;
+    this.maxWorkNanos = Math.max(0L, maxWorkNanos);
+    remainingNanos = Math.max(0L, sliceNanos);
+    this.sliceNanos = remainingNanos;
+  }
+
+  /** True when {@link #useOverspendSlice} replaced this tick's budget. */
+  public boolean isOverspend() {
+    return overspend;
+  }
+
+  /** Marks a Chunk Steward backoff tick so the stage log can count it. */
+  public void markBackoff() {
+    backoff = true;
+  }
+
+  /** True when the scheduler left overspend for the collapse brake. */
+  public boolean isBackoff() {
+    return backoff;
   }
 
   /** The slice decided for this tick, in nanoseconds, before this job spent it. */
@@ -147,6 +186,9 @@ public final class TickBudget {
     if (unlimited) {
       return Long.MAX_VALUE;
     }
+    if (overspend) {
+      return Math.max(MIN_DRAIN_NANOS, remainingNanos());
+    }
     if (behind) {
       return MIN_DRAIN_NANOS;
     }
@@ -165,6 +207,14 @@ public final class TickBudget {
    */
   public boolean tryHeavy() {
     if (unlimited) {
+      heavyUsed = true;
+      return true;
+    }
+    if (overspend) {
+      if (remainingNanos() <= 0) {
+        heavyWanted = true;
+        return false;
+      }
       heavyUsed = true;
       return true;
     }

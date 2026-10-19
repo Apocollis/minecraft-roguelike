@@ -13,16 +13,80 @@ import java.util.OptionalLong;
  */
 public final class StewardPace {
 
+  /** Ticks in a row whose dungeon spend exceeded the ceiling before overspend yields. */
+  static final int MAX_CEILING_STREAK = 5;
+
   private boolean decided;
   private int decidedTickId;
   private Decision decision = Decision.OPEN;
   private OptionalLong capNanos = OptionalLong.empty();
+  private boolean modeDecided;
+  private int modeTickId;
+  private Mode mode = Mode.OVERSPEND;
+  private int freezeStreak;
+  private int resumeStreak;
+  private int ceilingStreak;
 
-  /** Forgets the decision and the remembered server-tick id, so the next call decides again. */
+  /** Forgets the decision, the mode, and the remembered server-tick id, so the next call decides again. */
   public void reset() {
     decided = false;
     decision = Decision.OPEN;
     capNanos = OptionalLong.empty();
+    modeDecided = false;
+    mode = Mode.OVERSPEND;
+    freezeStreak = 0;
+    resumeStreak = 0;
+    ceilingStreak = 0;
+  }
+
+  /**
+   * Advances the overspend or backoff mode once per server tick. A repeated {@code serverTickId}
+   * keeps the first call's mode. {@code measuredTps} of zero or less, including a missing reading,
+   * does not count as a freeze. {@code previousSpendNanos} is the dungeon work of the previous tick.
+   */
+  public void noteServerTick(int serverTickId, double measuredTps, long previousSpendNanos, long maxWorkNanos,
+      double freezeTps, int freezeTicks, double resumeTps, int resumeTicks) {
+    if (modeDecided && serverTickId == modeTickId) {
+      return;
+    }
+    modeDecided = true;
+    modeTickId = serverTickId;
+    if (previousSpendNanos > maxWorkNanos) {
+      ceilingStreak++;
+    } else {
+      ceilingStreak = 0;
+    }
+    if (mode == Mode.OVERSPEND) {
+      resumeStreak = 0;
+      if (measuredTps > 0.0 && measuredTps < freezeTps) {
+        freezeStreak++;
+      } else {
+        freezeStreak = 0;
+      }
+      if (freezeStreak >= Math.max(1, freezeTicks) || ceilingStreak >= MAX_CEILING_STREAK) {
+        mode = Mode.BACKOFF;
+        freezeStreak = 0;
+        resumeStreak = 0;
+        ceilingStreak = 0;
+      }
+      return;
+    }
+    freezeStreak = 0;
+    ceilingStreak = 0;
+    if (measuredTps >= resumeTps) {
+      resumeStreak++;
+    } else {
+      resumeStreak = 0;
+    }
+    if (resumeStreak >= Math.max(1, resumeTicks)) {
+      mode = Mode.OVERSPEND;
+      resumeStreak = 0;
+    }
+  }
+
+  /** True when this tick should spend the fixed overspend slice, including on a catch-up tick. */
+  public boolean isOverspend() {
+    return mode == Mode.OVERSPEND;
   }
 
   /**
@@ -68,5 +132,10 @@ public final class StewardPace {
     FULL_TPS,
     OPEN,
     PAUSED
+  }
+
+  private enum Mode {
+    OVERSPEND,
+    BACKOFF
   }
 }

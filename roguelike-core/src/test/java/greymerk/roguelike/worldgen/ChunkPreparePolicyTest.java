@@ -163,6 +163,36 @@ public class ChunkPreparePolicyTest {
   }
 
   @Test
+  public void overspendBehindRunsSeveralHeavyStepsUntilTheSliceIsSpent() {
+    FakeReservation world = new FakeReservation();
+    ChunkPreparePolicy policy = new ChunkPreparePolicy(world, footprint(), 600);
+
+    TickBudget wide = greymerk.roguelike.dungeon.TickBudgetsForTest.overspendBehind(42_000_000L, 200_000_000L);
+    assertThat(policy.tick(wide)).isTrue();
+    assertThat(world.heavyCalls()).isGreaterThan(1);
+
+    FakeReservation stepped = new FakeReservation();
+    ChunkPreparePolicy oneByOne = new ChunkPreparePolicy(stepped, footprint(), 600);
+    assertThat(oneByOne.tick(greymerk.roguelike.dungeon.TickBudgetsForTest.overspendBehind(1L, 200_000_000L))).isFalse();
+    assertThat(stepped.heavyCalls()).isEqualTo(1);
+  }
+
+  @Test
+  public void catchUpWithoutOverspendDoesNoHeavyWorkUnlessForced() {
+    FakeReservation refused = new FakeReservation();
+    ChunkPreparePolicy waiting = new ChunkPreparePolicy(refused, footprint(), 600);
+    assertThat(waiting.tick(greymerk.roguelike.dungeon.TickBudgetsForTest.behind())).isFalse();
+    assertThat(refused.heavyCalls()).isZero();
+
+    FakeReservation forcedWorld = new FakeReservation();
+    ChunkPreparePolicy forced = new ChunkPreparePolicy(forcedWorld, footprint(), 600);
+    assertThat(forced.tick(greymerk.roguelike.dungeon.TickBudgetsForTest.behindForced())).isFalse();
+    assertThat(forcedWorld.heavyCalls()).isEqualTo(1);
+    assertThat(forced.tick(greymerk.roguelike.dungeon.TickBudgetsForTest.behindForced())).isFalse();
+    assertThat(forcedWorld.heavyCalls()).isEqualTo(2);
+  }
+
+  @Test
   public void fullTpsSliceRunsSeveralHeavyStepsUntilItIsSpent() {
     FakeReservation world = new FakeReservation();
     ChunkPreparePolicy policy = new ChunkPreparePolicy(world, footprint(), 600);

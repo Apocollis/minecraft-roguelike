@@ -142,12 +142,15 @@ public final class ChunkPreparePolicy {
     return true;
   }
 
-  /** Further heavy steps only while a full-TPS slice is actually shrinking. */
+  /** Further heavy steps only while an overspend or full-TPS slice is actually shrinking. */
   private boolean anotherHeavyStep(TickBudget budget) {
-    return budget.isFullTps()
-        && !budget.isBehind()
-        && budget.remainingNanos() > 0
-        && lastStepReducedRemaining;
+    if (!lastStepReducedRemaining || budget.remainingNanos() <= 0) {
+      return false;
+    }
+    if (budget.isOverspend()) {
+      return true;
+    }
+    return budget.isFullTps() && !budget.isBehind();
   }
 
   private void onePrepare(Coord focus, TickBudget budget) {

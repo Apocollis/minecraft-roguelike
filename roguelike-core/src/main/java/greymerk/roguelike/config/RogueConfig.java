@@ -77,6 +77,18 @@ public class RogueConfig {
   public static final RogueConfig STEWARD_PAUSED_SLICE_MS = new RogueConfig("stewardPausedSliceMs").withValue(2.0);
   /** Longest wait, in ticks, between steps while Chunk Steward pacing is active. Minimum 1. */
   public static final RogueConfig STEWARD_MAX_INTERVAL_TICKS = new RogueConfig("stewardMaxIntervalTicks").withValue(20);
+  /** Fixed per-tick dungeon budget, in ms, while Chunk Steward overspend is active. Shared by prepare, build steps, and light drain. */
+  public static final RogueConfig STEWARD_OVERSPEND_SLICE_MS = new RogueConfig("stewardOverspendSliceMs").withValue(42.0);
+  /** Dungeon work, in ms, past which no new step starts. Several ticks over this leave overspend. */
+  public static final RogueConfig STEWARD_MAX_TICK_WORK_MS = new RogueConfig("stewardMaxTickWorkMs").withValue(200.0);
+  /** Measured TPS below which a server tick counts toward leaving overspend. */
+  public static final RogueConfig STEWARD_FREEZE_TPS = new RogueConfig("stewardFreezeTps").withValue(10.0);
+  /** Consecutive seconds of server ticks under {@link #STEWARD_FREEZE_TPS} before backoff. Not wall-clock time. */
+  public static final RogueConfig STEWARD_FREEZE_SECONDS = new RogueConfig("stewardFreezeSeconds").withValue(10);
+  /** Measured TPS at or above which a server tick counts toward returning to overspend. */
+  public static final RogueConfig STEWARD_RESUME_TPS = new RogueConfig("stewardResumeTps").withValue(15.0);
+  /** Consecutive seconds of server ticks at or above {@link #STEWARD_RESUME_TPS} before overspend resumes. */
+  public static final RogueConfig STEWARD_RESUME_SECONDS = new RogueConfig("stewardResumeSeconds").withValue(5);
 
   private final String name;
   private String stringValue;
@@ -214,6 +226,24 @@ public class RogueConfig {
     }
     if (!configurationMap.containsKey(STEWARD_MAX_INTERVAL_TICKS.name)) {
       STEWARD_MAX_INTERVAL_TICKS.setInt(STEWARD_MAX_INTERVAL_TICKS.intValue);
+    }
+    if (!configurationMap.containsKey(STEWARD_OVERSPEND_SLICE_MS.name)) {
+      STEWARD_OVERSPEND_SLICE_MS.setDouble(STEWARD_OVERSPEND_SLICE_MS.doubleValue);
+    }
+    if (!configurationMap.containsKey(STEWARD_MAX_TICK_WORK_MS.name)) {
+      STEWARD_MAX_TICK_WORK_MS.setDouble(STEWARD_MAX_TICK_WORK_MS.doubleValue);
+    }
+    if (!configurationMap.containsKey(STEWARD_FREEZE_TPS.name)) {
+      STEWARD_FREEZE_TPS.setDouble(STEWARD_FREEZE_TPS.doubleValue);
+    }
+    if (!configurationMap.containsKey(STEWARD_FREEZE_SECONDS.name)) {
+      STEWARD_FREEZE_SECONDS.setInt(STEWARD_FREEZE_SECONDS.intValue);
+    }
+    if (!configurationMap.containsKey(STEWARD_RESUME_TPS.name)) {
+      STEWARD_RESUME_TPS.setDouble(STEWARD_RESUME_TPS.doubleValue);
+    }
+    if (!configurationMap.containsKey(STEWARD_RESUME_SECONDS.name)) {
+      STEWARD_RESUME_SECONDS.setInt(STEWARD_RESUME_SECONDS.intValue);
     }
   }
 
