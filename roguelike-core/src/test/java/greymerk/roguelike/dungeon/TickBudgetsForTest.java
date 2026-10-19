@@ -15,4 +15,11 @@ public final class TickBudgetsForTest {
   public static TickBudget refusingHeavy() {
     return new TickBudget(15_000_000L, false, false, false);
   }
+
+  /** A full-TPS Steward slice of {@code nanos}, not behind. */
+  public static TickBudget fullTpsSlice(long nanos) {
+    TickBudget budget = new TickBudget(15_000_000L, false, true, false);
+    budget.useFullTpsSlice(nanos);
+    return budget;
+  }
 }

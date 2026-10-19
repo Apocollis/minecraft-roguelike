@@ -1,5 +1,23 @@
 # Issues and fixes
 
+## Dungeon build sits idle at 20 TPS
+
+**Cause:** With Chunk Steward loaded, the build paused whenever measured TPS dipped under 20, when its own footprint chunks counted as player demand, or when fewer than 3 ms remained at world-tick end. A server holding 20 TPS with about 30 ms used still held the dungeon. One `arcanaquest:main` took about 4.5 minutes (`PREPARE_CHUNKS` about 165 s, `ENCASE` about 77 s) on 2026-10-17.
+
+**Fix:** In the full-TPS band (measured TPS at least 19.5, or load factor at least 0.9), the slice is Chunk Steward's average headroom, clamped to 8–40 ms by default, and player chunk generation does not pause the build. Below that band a busy server still yields. One overrun is repaid on the next catch-up tick (budget stays 0) so a hitch does not become a sustained freeze. An existing `stewardMaxSliceMs` in `roguelike.cfg` is left as written.
+
+## Prepare and light drain stay on a short slice at 20 TPS
+
+**Cause:** One heavy chunk step per tick, and a pause while `isGeneratingChunks()` was true, held footprint prepare to well under one chunk per tick. `drainNanos()` capped light relief at 8 ms, so `ENCASE` could queue hundreds of thousands of light updates and then place nothing until the backlog fell under 20,000. Locate-and-teleport and walk-up runs on 2026-10-18 took 70 s and 148 s.
+
+**Fix:** A full-TPS tick that is not behind runs several heavy steps while its slice shrinks, and the light drain may use whatever slice placement did not. Loads and populates interleave once a chunk's three neighbours are loaded. The chunks nearest a player go first. Below the full-TPS band, and on a catch-up tick, the build still spreads: one heavy step on the interval, light drain 2 ms.
+
+## Crash: `ConcurrentModificationException` in `sendChangedChunks`
+
+**Cause:** The periodic flush iterates `dirtyChunks`. After sending a chunk it called `dirtyChunks.remove(chunkPos)` and then `it.remove()`. The set was changed under the iterator, so the first chunk sent during a dungeon build crashed the server. The final send iterates `changedChunks` instead, so the direct remove was only redundant there: that path clears `changedChunks`, `dirtyChunks`, and `lastSentTick` after the loop.
+
+**Fix:** Remove a chunk from the set being iterated only with `it.remove()`. A chunk still inside the resend window stays in `dirtyChunks`.
+
 ## `/locate RoguelikeDungeon` → Unable to locate
 
 **Cause:** First mixins used MCP names and never applied. Tweaks’ `getNearestStructurePos` mixin always returned **null** when `GridStructureTracker.isValidSpawnLocation` failed (it re-runs `canGenerateDungeonHere` on **already built** dungeon terrain).

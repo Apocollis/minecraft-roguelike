@@ -69,6 +69,11 @@ public class DungeonBuildJob {
   private long stageLongestWorldTickNanos;
   private int stageTicksCapped;
   private int stageTicksHeavyRestricted;
+  private int stageTicks;
+  private long stageSliceNanos;
+  private int stageTicksFullTps;
+  private TickBudget stageLastBudget;
+  private TickBudget activeBudget;
 
   /** Steps of the current task; the job owns them because task instances are shared. */
   private List<Runnable> taskSteps;
@@ -134,6 +139,7 @@ public class DungeonBuildJob {
       return false;
     }
 
+    activeBudget = budget;
     if (budget.isCapped()) {
       stageTicksCapped++;
     }
@@ -172,6 +178,7 @@ public class DungeonBuildJob {
   }
 
   private void runSteps(TickBudget budget) {
+    noteStageBudget();
     // PREPARE_CHUNKS gates itself per heavy step (and holds loaded chunks even while behind).
     if (currentStage() == DungeonStage.PREPARE_CHUNKS) {
       long start = System.nanoTime();
@@ -183,8 +190,9 @@ public class DungeonBuildJob {
       logger.info("PREPARE_CHUNKS: {}", preparePolicy.summary());
       finishStage(DungeonStage.PREPARE_CHUNKS);
     }
+    noteStageBudget();
 
-    boolean force = pausedTicks >= MAX_PAUSE_TICKS;
+    boolean force = pausedTicks >= budget.pauseForceTicks();
     boolean blocked = budget.isBehind()
         || budget.remainingNanos() <= 0
         || editor.pendingLightCount() > LIGHT_BACKLOG_LIMIT;
@@ -224,6 +232,9 @@ public class DungeonBuildJob {
 
   private void stepOnce() {
     DungeonStage stage = currentStage();
+    if (stage != null) {
+      noteStageBudget();
+    }
     if (stage == null) {
       complete();
       return;
@@ -285,7 +296,8 @@ public class DungeonBuildJob {
     if (preparePolicy == null) {
       ChunkFootprint footprint = dungeon.getFootprint();
       reservation = editor.reserveChunks(footprint.getAll().size());
-      preparePolicy = new ChunkPreparePolicy(reservation, footprint, POPULATE_WAIT_TICKS);
+      preparePolicy = new ChunkPreparePolicy(reservation, footprint, POPULATE_WAIT_TICKS,
+          () -> editor.getNearestPlayerPos(coord));
       logger.info("Preparing {} footprint chunks for dungeon id {} at {}.", footprint.getAll().size(), settings.getId(), coord);
     }
     return preparePolicy;
@@ -300,7 +312,8 @@ public class DungeonBuildJob {
     String light = editor.takeLightStats();
     logger.info(
         "Completed dungeon stage [{}/{}] {}: work {}ms (longest single step {}ms), end-of-tick flush {}ms (longest {}ms), "
-            + "largest world tick {}ms, elapsed {}ms, ticks the shared budget was trimmed {}, ticks heavy work was held back {}{}",
+            + "largest world tick {}ms, elapsed {}ms, average slice {}ms, ticks at full TPS {}, "
+            + "ticks the shared budget was trimmed {}, ticks heavy work was held back {}{}",
         stageIndex + 1,
         DungeonStage.values().length,
         stage,
@@ -310,6 +323,8 @@ public class DungeonBuildJob {
         stageLongestFlushNanos / NANOS_PER_MS,
         stageLongestWorldTickNanos / NANOS_PER_MS,
         System.currentTimeMillis() - stageStartMs,
+        stageTicks == 0 ? 0L : stageSliceNanos / (stageTicks * NANOS_PER_MS),
+        stageTicksFullTps,
         stageTicksCapped,
         stageTicksHeavyRestricted,
         light.isEmpty() ? "" : ", " + light);
@@ -327,6 +342,24 @@ public class DungeonBuildJob {
     stageLongestWorldTickNanos = 0;
     stageTicksCapped = 0;
     stageTicksHeavyRestricted = 0;
+    stageTicks = 0;
+    stageSliceNanos = 0;
+    stageTicksFullTps = 0;
+    stageLastBudget = null;
+  }
+
+  /** Counts this server tick's slice once per stage. A stage that starts later in the same tick counts it too. */
+  private void noteStageBudget() {
+    TickBudget budget = activeBudget;
+    if (budget == null || budget == stageLastBudget) {
+      return;
+    }
+    stageLastBudget = budget;
+    stageTicks++;
+    stageSliceNanos += budget.sliceNanos();
+    if (budget.isFullTps()) {
+      stageTicksFullTps++;
+    }
   }
 
   private void releaseChunks() {

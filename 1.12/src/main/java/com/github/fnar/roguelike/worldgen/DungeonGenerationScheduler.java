@@ -28,11 +28,13 @@ import greymerk.roguelike.worldgen.Coord;
  *
  * <p>The budget is per server tick, not per world: {@link BuildPacer} sizes it at server tick START
  * from the idle time before it, and every world's job spends from the same {@link TickBudget}, so
- * builds in two dimensions do not each spend the full headroom, and at most one heavy chunk step
- * runs per server tick. When Chunk Steward is loaded, {@link StewardPacing} can lower that budget
- * further: a struggling server or one still generating chunks holds new steps, with a 3 ms slice
- * every {@link StewardPace#TRICKLE_TICKS} paused server ticks. Jobs are called every world tick
- * even while the server is behind; the job itself skips new steps and keeps draining light.
+ * builds in two dimensions do not each spend the full headroom. When Chunk Steward is loaded,
+ * {@link StewardPacing} says whether the server is busy. Load factor {@code >= 0.9} or measured
+ * TPS {@code >= 19.5} spends Steward's average headroom, several heavy steps to a slice, and does
+ * not pause for player chunk generation. Below that band a busy server yields, with a small slice
+ * so the build still moves. A catch-up tick stays at budget 0 so one overrun is repaid before the
+ * next full slice. Jobs are called every world tick even while the server is behind; the job
+ * itself skips new steps and keeps draining light.
  */
 public class DungeonGenerationScheduler {
 
@@ -44,6 +46,10 @@ public class DungeonGenerationScheduler {
   private static final StewardPace stewardPace = new StewardPace();
   /** Counts server-tick STARTs so every world applies one pause decision for that tick. */
   private static int serverTickId;
+  /** Load factor at or above this is the full-TPS band when measured TPS is unavailable. 0.9 is 19.5 TPS on Steward's default 15–20 range. */
+  private static final double FULL_TPS_LOAD_FACTOR = 0.9;
+  /** Measured TPS at or above this is full TPS, including while player chunks are generating. */
+  private static final double FULL_TPS_MEASURED = 19.5;
 
   public static void enqueue(World world, DungeonBuildJob job) {
     if (world == null || world.isRemote) {
@@ -97,7 +103,10 @@ public class DungeonGenerationScheduler {
     long now = System.nanoTime();
     if (event.phase == TickEvent.Phase.START) {
       serverTickId++;
-      pacer.onServerTickStart(now, RogueConfig.PREPARE_HEAVY_STEP_MAX_INTERVAL_TICKS.getInt());
+      int heavyInterval = StewardPacing.available()
+          ? RogueConfig.STEWARD_MAX_INTERVAL_TICKS.getInt()
+          : RogueConfig.PREPARE_HEAVY_STEP_MAX_INTERVAL_TICKS.getInt();
+      pacer.onServerTickStart(now, heavyInterval);
     } else {
       pacer.onServerTickEnd(now);
     }
@@ -151,25 +160,46 @@ public class DungeonGenerationScheduler {
 
   /**
    * One pause decision per server tick, taken by the first world that still has a job. A later
-   * dimension applies that same cap. When the tick is not paused, it is trimmed only to the time
-   * Chunk Steward still has left in this tick.
+   * dimension applies that same decision. In the full-TPS band the slice is Chunk Steward's
+   * average headroom and player chunk generation does not pause the build. Below that, the slice
+   * is the time still left in this tick.
    */
   private static void applySteward(TickBudget budget) {
     if (!StewardPacing.available()) {
       return;
     }
-    double remainingMs = StewardPacing.remainingMs();
-    boolean paused = StewardPacing.serverStruggling()
-        || StewardPacing.generatingChunks()
-        || remainingMs < 3.0;
-    stewardPace.beginServerTick(serverTickId, paused);
+    double loadFactor = StewardPacing.loadFactor();
+    double minLoadFactor = RogueConfig.STEWARD_MIN_LOAD_FACTOR.getDouble();
+    boolean generating = StewardPacing.generatingChunks();
+    boolean measuredFull = StewardPacing.hasMeasuredTps() && StewardPacing.measuredTps() >= FULL_TPS_MEASURED;
+    boolean fullTps = measuredFull || loadFactor >= FULL_TPS_LOAD_FACTOR;
+    double remainingMs = 0.0;
+    boolean paused;
+    double effectiveLoadFactor;
+    if (fullTps) {
+      paused = false;
+      effectiveLoadFactor = 1.0;
+    } else {
+      remainingMs = StewardPacing.remainingMs();
+      paused = StewardPacing.serverStruggling(minLoadFactor) || generating || remainingMs < 3.0;
+      effectiveLoadFactor = loadFactor;
+    }
+    long pausedSliceNanos = (long) (Math.max(0.0, RogueConfig.STEWARD_PAUSED_SLICE_MS.getDouble()) * 1_000_000.0);
+    stewardPace.beginServerTick(serverTickId, paused, effectiveLoadFactor, pausedSliceNanos);
     OptionalLong cap = stewardPace.capNanosForTick();
     if (cap.isPresent()) {
       budget.capNanos(cap.getAsLong());
+    } else if (stewardPace.isFullTps()) {
+      double minSlice = Math.max(0.0, RogueConfig.STEWARD_MIN_SLICE_MS.getDouble());
+      double maxSlice = Math.max(minSlice, RogueConfig.STEWARD_MAX_SLICE_MS.getDouble());
+      double sliceMs = Math.max(minSlice, Math.min(maxSlice, StewardPacing.headroomMs()));
+      budget.useFullTpsSlice((long) (sliceMs * 1_000_000.0));
     } else {
       budget.capNanos((long) (remainingMs * 1_000_000.0));
     }
-    if (stewardPace.restrictHeavy(pacer.heavyWaitTicks())) {
+    int maxIntervalTicks = Math.max(1, RogueConfig.STEWARD_MAX_INTERVAL_TICKS.getInt());
+    budget.setPauseForceTicks(maxIntervalTicks);
+    if (stewardPace.restrictHeavy(pacer.heavyWaitTicks(), maxIntervalTicks)) {
       budget.restrictHeavy();
     }
   }

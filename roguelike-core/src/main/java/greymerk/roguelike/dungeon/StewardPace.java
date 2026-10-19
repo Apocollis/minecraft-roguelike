@@ -1,82 +1,72 @@
+package greymerk.roguelike.dungeon;
+
 import java.util.OptionalLong;
 
 /**
- * How a dungeon build yields to Chunk Steward for one server tick. One streak for every world:
- * the first call in a server tick decides, and later worlds apply that same decision. The budget
- * itself stays on {@link TickBudget}; this class only chooses the cap.
+ * How a dungeon build yields to Chunk Steward for one server tick. The first call in a server tick
+ * decides, and later worlds apply that same decision. The budget itself stays on {@link TickBudget}.
  *
- * <p>A paused run of ticks allows a 3 ms slice every {@link #TRICKLE_TICKS} ticks. Heavy chunk
- * steps stay restricted on those ticks too, until {@link #HEAVY_INTERVAL_TICKS} of refused heavy
- * work have passed. {@code capNanos} never raises a budget, so a catch-up tick that already has
- * zero budget stays at zero.
+ * <p>When the server is at full TPS and not paused, the caller sizes the slice from Steward's
+ * headroom. A paused tick gets a small slice, or zero when the load factor is already zero, so a
+ * catch-up budget of zero is never raised. Heavy chunk steps stay restricted on paused ticks until
+ * the caller's interval has passed.
  */
 public final class StewardPace {
 
-  /** Consecutive paused server ticks between 3 ms slices. */
-  public static final int TRICKLE_TICKS = 10;
-  /** Refused heavy steps before Chunk Steward stops holding them back. The lag gate still applies. */
-  public static final int HEAVY_INTERVAL_TICKS = 40;
-  /** Slice granted on a trickle tick. Applied with {@link TickBudget#capNanos}, which only lowers. */
-  public static final long TRICKLE_NANOS = 3_000_000L;
-
-  private int streak;
   private boolean decided;
   private int decidedTickId;
   private Decision decision = Decision.OPEN;
+  private OptionalLong capNanos = OptionalLong.empty();
 
-  /** Forgets the streak and the remembered server-tick id, so the next call decides again. */
+  /** Forgets the decision and the remembered server-tick id, so the next call decides again. */
   public void reset() {
-    streak = 0;
     decided = false;
     decision = Decision.OPEN;
+    capNanos = OptionalLong.empty();
   }
 
   /**
    * Decides this server tick. A repeated {@code serverTickId} keeps the first call's result, even
-   * when {@code paused} differs.
+   * when the later arguments differ.
    */
-  public void beginServerTick(int serverTickId, boolean paused) {
+  public void beginServerTick(int serverTickId, boolean paused, double loadFactor, long pausedSliceNanos) {
     if (decided && serverTickId == decidedTickId) {
       return;
     }
     decided = true;
     decidedTickId = serverTickId;
-    if (!paused) {
-      streak = 0;
-      decision = Decision.OPEN;
+    if (paused) {
+      decision = Decision.PAUSED;
+      capNanos = loadFactor <= 0.0
+          ? OptionalLong.of(0L)
+          : OptionalLong.of(Math.max(0L, pausedSliceNanos));
       return;
     }
-    streak++;
-    if (streak >= TRICKLE_TICKS) {
-      streak = 0;
-      decision = Decision.TRICKLE;
-    } else {
-      decision = Decision.HOLD;
-    }
+    capNanos = OptionalLong.empty();
+    decision = loadFactor >= 1.0 ? Decision.FULL_TPS : Decision.OPEN;
   }
 
   /**
-   * Pause cap for the decision in force: 0, {@link #TRICKLE_NANOS}, or empty when this tick is not
-   * paused. Empty means the caller caps to its own remaining time instead.
+   * Pause cap for the decision in force, or empty when this tick is not paused. Empty means the
+   * caller applies a full-TPS slice or caps to the time still left in the tick.
    */
   public OptionalLong capNanosForTick() {
-    if (decision == Decision.HOLD) {
-      return OptionalLong.of(0L);
-    }
-    if (decision == Decision.TRICKLE) {
-      return OptionalLong.of(TRICKLE_NANOS);
-    }
-    return OptionalLong.empty();
+    return capNanos;
   }
 
-  /** True on every paused decision, including a trickle tick, until heavy work has waited long enough. */
-  public boolean restrictHeavy(int heavyWaitTicks) {
-    return decision != Decision.OPEN && heavyWaitTicks < HEAVY_INTERVAL_TICKS;
+  /** True when this tick should spend Chunk Steward's average headroom instead of the in-tick remainder. */
+  public boolean isFullTps() {
+    return decision == Decision.FULL_TPS;
+  }
+
+  /** True on a paused decision until heavy work has waited the caller's interval. */
+  public boolean restrictHeavy(int heavyWaitTicks, int maxIntervalTicks) {
+    return decision == Decision.PAUSED && heavyWaitTicks < Math.max(1, maxIntervalTicks);
   }
 
   private enum Decision {
+    FULL_TPS,
     OPEN,
-    HOLD,
-    TRICKLE
+    PAUSED
   }
 }

@@ -134,7 +134,7 @@ public class ChunkPreparePolicyTest {
   }
 
   @Test
-  public void populatesOnlyAfterEveryChunkIsLoaded() {
+  public void populatesAChunkOnceItsNeighboursAreLoaded() {
     FakeReservation world = new FakeReservation();
     ChunkFootprint footprint = footprint();
     ChunkPreparePolicy policy = new ChunkPreparePolicy(world, footprint, 600);
@@ -144,14 +144,46 @@ public class ChunkPreparePolicyTest {
     int lastLoad = -1;
     int firstPopulate = Integer.MAX_VALUE;
     for (int i = 0; i < world.calls.size(); i++) {
-      if (world.calls.get(i).startsWith("load")) {
+      String call = world.calls.get(i);
+      if (call.startsWith("load")) {
         lastLoad = i;
       } else {
         firstPopulate = Math.min(firstPopulate, i);
+        int comma = call.indexOf(',');
+        int x = Integer.parseInt(call.substring("populate ".length(), comma));
+        int z = Integer.parseInt(call.substring(comma + 1));
+        assertLoadedBefore(world.calls, x + 1, z, i);
+        assertLoadedBefore(world.calls, x, z + 1, i);
+        assertLoadedBefore(world.calls, x + 1, z + 1, i);
       }
     }
-    assertThat(lastLoad).isLessThan(firstPopulate);
+    assertThat(firstPopulate).isLessThan(lastLoad);
+    assertThat(world.calls).doesNotContain("populate 1,0", "populate 0,1", "populate 1,1", "populate 1,-1", "populate -1,1");
     assertThat(world.calls.stream().filter(c -> c.startsWith("load")).count()).isEqualTo(footprint.getAll().size());
+  }
+
+  @Test
+  public void fullTpsSliceRunsSeveralHeavyStepsUntilItIsSpent() {
+    FakeReservation world = new FakeReservation();
+    ChunkPreparePolicy policy = new ChunkPreparePolicy(world, footprint(), 600);
+
+    TickBudget wide = greymerk.roguelike.dungeon.TickBudgetsForTest.fullTpsSlice(40_000_000L);
+    assertThat(policy.tick(wide)).isTrue();
+    assertThat(world.heavyCalls()).isGreaterThan(1);
+    assertThat(world.stateOf(1, 0)).isEqualTo(ChunkLoadState.LOADED_UNPOPULATED);
+
+    FakeReservation stepped = new FakeReservation();
+    ChunkPreparePolicy oneByOne = new ChunkPreparePolicy(stepped, footprint(), 600);
+    assertThat(oneByOne.tick(greymerk.roguelike.dungeon.TickBudgetsForTest.fullTpsSlice(1L))).isFalse();
+    assertThat(stepped.heavyCalls()).isEqualTo(1);
+    assertThat(oneByOne.tick(greymerk.roguelike.dungeon.TickBudgetsForTest.fullTpsSlice(1L))).isFalse();
+    assertThat(stepped.heavyCalls()).isEqualTo(2);
+  }
+
+  private static void assertLoadedBefore(List<String> calls, int x, int z, int populateIndex) {
+    int loadedAt = calls.indexOf("load " + x + "," + z);
+    assertThat(loadedAt).isNotNegative();
+    assertThat(loadedAt).isLessThan(populateIndex);
   }
 
   @Test

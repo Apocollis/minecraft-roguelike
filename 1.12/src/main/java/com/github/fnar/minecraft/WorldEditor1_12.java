@@ -506,6 +506,18 @@ public class WorldEditor1_12 implements WorldEditor {
   }
 
   @Override
+  public Coord getNearestPlayerPos(Coord target) {
+    if (world == null || target == null) {
+      return target;
+    }
+    EntityPlayer player = world.getClosestPlayer(target.getX(), target.getY(), target.getZ(), -1.0D, false);
+    if (player == null) {
+      return target;
+    }
+    return new Coord((int) player.posX, (int) player.posY, (int) player.posZ);
+  }
+
+  @Override
   public void enqueueDungeonBuild(DungeonBuildJob job) {
     DungeonGenerationScheduler.enqueue(world, job);
   }
@@ -577,7 +589,6 @@ public class WorldEditor1_12 implements WorldEditor {
         }
       }
       lastSentTick.put(chunkPos, now);
-      dirtyChunks.remove(chunkPos);
       if (!ignoreResendWindow) {
         it.remove();
       }

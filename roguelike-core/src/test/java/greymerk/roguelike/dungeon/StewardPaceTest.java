@@ -8,69 +8,71 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class StewardPaceTest {
 
+  private static final long PAUSED_SLICE = 2_000_000L;
+
   @Test
-  public void ninePausedTicksHoldAndTheTenthTricklesWithoutRaisingZero() {
+  public void fullTpsTakesNoPauseCap() {
     StewardPace pace = new StewardPace();
-    TickBudget budget = new TickBudget(0L, false, true, false);
+    pace.beginServerTick(1, false, 1.0, PAUSED_SLICE);
 
-    for (int tick = 1; tick <= 9; tick++) {
-      pace.beginServerTick(tick, true);
-      assertThat(pace.capNanosForTick()).isEqualTo(OptionalLong.of(0L));
-      budget.capNanos(pace.capNanosForTick().getAsLong());
-      assertThat(budget.remainingNanos()).isZero();
-    }
-
-    TickBudget open = new TickBudget(15_000_000L, false, true, false);
-    pace.beginServerTick(10, true);
-    assertThat(pace.capNanosForTick()).isEqualTo(OptionalLong.of(StewardPace.TRICKLE_NANOS));
-    open.capNanos(pace.capNanosForTick().getAsLong());
-    assertThat(open.remainingNanos()).isEqualTo(StewardPace.TRICKLE_NANOS);
-
-    budget.capNanos(pace.capNanosForTick().getAsLong());
-    assertThat(budget.remainingNanos()).isZero();
+    assertThat(pace.isFullTps()).isTrue();
+    assertThat(pace.capNanosForTick()).isEmpty();
+    assertThat(pace.restrictHeavy(0, 20)).isFalse();
   }
 
   @Test
-  public void anOpenTickResetsTheStreak() {
+  public void openTickBelowFullTpsTakesNoPauseCap() {
     StewardPace pace = new StewardPace();
-    pace.beginServerTick(1, true);
-    pace.beginServerTick(2, true);
-    pace.beginServerTick(3, false);
+    pace.beginServerTick(1, false, 0.75, PAUSED_SLICE);
 
+    assertThat(pace.isFullTps()).isFalse();
     assertThat(pace.capNanosForTick()).isEmpty();
-    pace.beginServerTick(4, true);
+    assertThat(pace.restrictHeavy(0, 20)).isFalse();
+  }
+
+  @Test
+  public void pausedTickWithLoadKeepsASliceAndRestrictsHeavyUntilTheInterval() {
+    StewardPace pace = new StewardPace();
+    pace.beginServerTick(1, true, 0.8, PAUSED_SLICE);
+
+    assertThat(pace.isFullTps()).isFalse();
+    assertThat(pace.capNanosForTick()).isEqualTo(OptionalLong.of(PAUSED_SLICE));
+    assertThat(pace.restrictHeavy(0, 20)).isTrue();
+    assertThat(pace.restrictHeavy(19, 20)).isTrue();
+    assertThat(pace.restrictHeavy(20, 20)).isFalse();
+  }
+
+  @Test
+  public void pausedTickAtZeroLoadCapsAtZeroAndDoesNotRaiseACatchUpBudget() {
+    StewardPace pace = new StewardPace();
+    pace.beginServerTick(1, true, 0.0, PAUSED_SLICE);
+
     assertThat(pace.capNanosForTick()).isEqualTo(OptionalLong.of(0L));
+    TickBudget catchUp = new TickBudget(0L, true, false, false);
+    catchUp.capNanos(pace.capNanosForTick().getAsLong());
+    assertThat(catchUp.remainingNanos()).isZero();
+    assertThat(catchUp.isFullTps()).isFalse();
   }
 
   @Test
-  public void heavyStaysRestrictedOnATrickleTickUntilTheInterval() {
+  public void oneDecisionPerServerTickIgnoresALaterCall() {
     StewardPace pace = new StewardPace();
-    for (int tick = 1; tick <= StewardPace.TRICKLE_TICKS; tick++) {
-      pace.beginServerTick(tick, true);
-    }
-    assertThat(pace.capNanosForTick()).isEqualTo(OptionalLong.of(StewardPace.TRICKLE_NANOS));
-    assertThat(pace.restrictHeavy(0)).isTrue();
-    assertThat(pace.restrictHeavy(StewardPace.HEAVY_INTERVAL_TICKS - 1)).isTrue();
-    assertThat(pace.restrictHeavy(StewardPace.HEAVY_INTERVAL_TICKS)).isFalse();
-  }
+    pace.beginServerTick(7, false, 1.0, PAUSED_SLICE);
+    pace.beginServerTick(7, true, 0.0, PAUSED_SLICE);
 
-  @Test
-  public void oneDecisionPerServerTickIgnoresALaterPausedFlag() {
-    StewardPace pace = new StewardPace();
-    pace.beginServerTick(7, false);
-    pace.beginServerTick(7, true);
-
+    assertThat(pace.isFullTps()).isTrue();
     assertThat(pace.capNanosForTick()).isEmpty();
-    assertThat(pace.restrictHeavy(0)).isFalse();
+    assertThat(pace.restrictHeavy(0, 20)).isFalse();
   }
 
   @Test
   public void resetForgetsTheTickId() {
     StewardPace pace = new StewardPace();
-    pace.beginServerTick(7, true);
+    pace.beginServerTick(7, true, 0.0, PAUSED_SLICE);
     pace.reset();
-    pace.beginServerTick(7, false);
+    pace.beginServerTick(7, false, 1.0, PAUSED_SLICE);
 
+    assertThat(pace.isFullTps()).isTrue();
     assertThat(pace.capNanosForTick()).isEmpty();
   }
 }

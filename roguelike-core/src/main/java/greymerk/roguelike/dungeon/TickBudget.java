@@ -2,8 +2,8 @@ package greymerk.roguelike.dungeon;
 
 /**
  * What dungeon builds may spend in one server tick. One instance is shared by every world's build
- * job in that tick, so builds in several dimensions together stay inside one budget, and at most
- * one heavy chunk step (a chunk load or populate) runs per server tick.
+ * job in that tick, so builds in several dimensions together stay inside one budget. A full-TPS
+ * slice may run several heavy chunk steps while time remains. Every other budget runs at most one.
  *
  * <p>Created by {@link BuildPacer}, or {@link #unlimited()} where nothing is ticking (client
  * worlds, {@code runToCompletion}).
@@ -24,6 +24,9 @@ public final class TickBudget {
   private boolean heavyWanted;
   private boolean capped;
   private boolean heavyRestricted;
+  private boolean fullTps;
+  private long sliceNanos;
+  private int pauseForceTicks = DungeonBuildJob.MAX_PAUSE_TICKS;
 
   TickBudget(long budgetNanos, boolean behind, boolean heavyAllowed, boolean heavyForced) {
     this(false, budgetNanos, behind, heavyAllowed, heavyForced);
@@ -32,6 +35,7 @@ public final class TickBudget {
   private TickBudget(boolean unlimited, long budgetNanos, boolean behind, boolean heavyAllowed, boolean heavyForced) {
     this.unlimited = unlimited;
     this.remainingNanos = Math.max(0L, budgetNanos);
+    this.sliceNanos = this.remainingNanos;
     this.behind = behind;
     this.heavyAllowed = heavyAllowed;
     this.heavyForced = heavyForced;
@@ -67,7 +71,43 @@ public final class TickBudget {
     if (cappedTo < remainingNanos) {
       remainingNanos = cappedTo;
       capped = true;
+      if (spentNanos == 0L) {
+        sliceNanos = remainingNanos;
+      }
     }
+  }
+
+  /**
+   * Replaces this tick's budget with a full-TPS slice. A second call in the same tick does nothing,
+   * so another world keeps spending what the first left. A catch-up tick stays at its current
+   * budget, which is zero. No effect when unlimited.
+   */
+  public void useFullTpsSlice(long nanos) {
+    if (unlimited || behind || fullTps) {
+      return;
+    }
+    fullTps = true;
+    remainingNanos = Math.max(0L, nanos);
+    sliceNanos = remainingNanos;
+  }
+
+  /** The slice decided for this tick, in nanoseconds, before this job spent it. */
+  public long sliceNanos() {
+    return sliceNanos;
+  }
+
+  /** True when {@link #useFullTpsSlice} replaced this tick's budget. */
+  public boolean isFullTps() {
+    return fullTps;
+  }
+
+  /** Ticks without a step before one is forced. 200 unless Chunk Steward pacing set another interval. */
+  public int pauseForceTicks() {
+    return pauseForceTicks;
+  }
+
+  public void setPauseForceTicks(int ticks) {
+    pauseForceTicks = Math.max(1, ticks);
   }
 
   /** True when {@link #capNanos} has lowered this tick's budget. */
@@ -100,8 +140,8 @@ public final class TickBudget {
   }
 
   /**
-   * Light drain allowance for one flush: 2 ms during a catch-up burst, otherwise what is left of
-   * the budget, between 2 and 8 ms.
+   * Light drain allowance for one flush. Catch-up is 2 ms. A full-TPS slice may use whatever time
+   * is left. Every other budget is what is left, between 2 and 8 ms. Unlimited is not capped.
    */
   public long drainNanos() {
     if (unlimited) {
@@ -110,16 +150,29 @@ public final class TickBudget {
     if (behind) {
       return MIN_DRAIN_NANOS;
     }
+    if (fullTps) {
+      return Math.max(MIN_DRAIN_NANOS, remainingNanos);
+    }
     return Math.max(MIN_DRAIN_NANOS, Math.min(MAX_DRAIN_NANOS, remainingNanos));
   }
 
   /**
-   * Claims this server tick's heavy chunk step. True at most once per server tick (any number of
-   * times when unlimited), and only when the lag gate allows it or the minimum heavy-step rate
-   * forces it. A refused call is remembered so the pacer counts how long heavy work has waited.
+   * Claims a heavy chunk step. Unlimited budgets succeed on every call. A full-TPS tick that is
+   * not behind succeeds again while {@link #remainingNanos()} is still positive; the caller spends
+   * the step before calling again. Every other budget succeeds at most once per tick, and only
+   * when the lag gate allows it or the minimum heavy-step rate forces it. A refused call is
+   * remembered so the pacer counts how long heavy work has waited.
    */
   public boolean tryHeavy() {
     if (unlimited) {
+      heavyUsed = true;
+      return true;
+    }
+    if (fullTps && !behind) {
+      if (remainingNanos <= 0) {
+        heavyWanted = true;
+        return false;
+      }
       heavyUsed = true;
       return true;
     }

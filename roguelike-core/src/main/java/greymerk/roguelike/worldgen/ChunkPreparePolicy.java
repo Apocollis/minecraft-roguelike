@@ -8,27 +8,23 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import greymerk.roguelike.dungeon.TickBudget;
 
 import static greymerk.roguelike.dungeon.Dungeon.MOD_ID;
 
 /**
- * Prepares a dungeon footprint across ticks with at most one heavy chunk step (a load or a
- * populate) per server tick, claimed from the shared {@link TickBudget}.
+ * Prepares a dungeon footprint across ticks. Already-loaded chunks are held for free. Each other
+ * step is one chunk load or one chunk populate, claimed from the shared {@link TickBudget}.
+ * A full-TPS tick that is not behind may run several of those steps while the slice still shrinks.
+ * Every other budget, including an unlimited one, runs one heavy step per {@link #tick} call.
  *
- * <ol>
- *   <li><b>Load</b>: hold every chunk that is already loaded (cheap, never gated), then load one
- *   more through the populate-suppressing load. A populate-set chunk that is still unpopulated
- *   moves to pass 2; populates the load cancelled outside the populate set go to pass 3.</li>
- *   <li><b>Populate</b>: once every footprint chunk is loaded, populate the waiting populate-set
- *   chunks one at a time (single chunk, never its neighbours). Gives up after
- *   {@code populateWaitTicks} and logs the chunks left.</li>
- *   <li><b>Others</b>: give each cancelled populate outside the populate set one single-chunk
- *   populate, so no chunk is left loaded and unpopulated (players would see a hole).</li>
- * </ol>
+ * <p>Loads and populates interleave. A populate-set chunk is populated once its +X, +Z and +XZ
+ * neighbours are loaded. The +X/+Z rim is load-only. Suppressed populates outside the populate
+ * set run after the footprint's own loads and populates are finished, one chunk each.
  *
- * Every state check is a side-effect-free lookup ({@link ChunkReservation#stateOf}); a check that
+ * <p>Every state check is a side-effect-free lookup ({@link ChunkReservation#stateOf}); a check that
  * cancelled pending unloads would keep polled chunks loaded forever.
  */
 public final class ChunkPreparePolicy {
@@ -43,6 +39,7 @@ public final class ChunkPreparePolicy {
   private final ChunkReservation reservation;
   private final ChunkFootprint footprint;
   private final int populateWaitTicks;
+  private final Supplier<Coord> nearestPlayer;
 
   private final Set<Long> pendingLoad;
   private final Set<Long> pendingPopulate = new LinkedHashSet<>();
@@ -57,11 +54,18 @@ public final class ChunkPreparePolicy {
   private int suppressedCount;
   private int othersAttempted;
   private long longestHeavyNanos;
+  private boolean lastStepReducedRemaining;
 
   public ChunkPreparePolicy(ChunkReservation reservation, ChunkFootprint footprint, int populateWaitTicks) {
+    this(reservation, footprint, populateWaitTicks, () -> new Coord(0, 0, 0));
+  }
+
+  public ChunkPreparePolicy(ChunkReservation reservation, ChunkFootprint footprint, int populateWaitTicks,
+      Supplier<Coord> nearestPlayer) {
     this.reservation = reservation;
     this.footprint = footprint;
     this.populateWaitTicks = populateWaitTicks;
+    this.nearestPlayer = nearestPlayer == null ? () -> new Coord(0, 0, 0) : nearestPlayer;
     this.pendingLoad = new LinkedHashSet<>(footprint.getAll());
   }
 
@@ -71,42 +75,94 @@ public final class ChunkPreparePolicy {
    */
   public boolean tick(TickBudget budget) {
     ticks++;
+    refreshPass();
     if (ticks % PROGRESS_LOG_TICKS == 0) {
       logger.info("Preparing footprint: pass {}, {} to load, {} to populate, {} others, {} heavy steps ({} forced).",
           pass, pendingLoad.size(), pendingPopulate.size(), pendingOthers.size(), heavySteps, forcedHeavySteps);
     }
-    while (pass != Pass.DONE) {
-      Pass before = pass;
-      switch (pass) {
-        case LOAD:
-          tickLoad(budget);
-          break;
-        case POPULATE:
-          tickPopulate(budget);
-          break;
-        case OTHERS:
-          tickOthers(budget);
-          break;
-        default:
-          break;
+    Coord focus = focus();
+    boolean countedPopulateTick = false;
+    while (true) {
+      holdLoaded();
+      pendingPopulate.removeIf(chunk -> stateOf(chunk) == ChunkLoadState.LOADED_POPULATED);
+      if (pendingLoad.isEmpty() && pendingPopulate.isEmpty()) {
+        sweepOthers();
+        if (pendingOthers.isEmpty()) {
+          pass = Pass.DONE;
+          return true;
+        }
+        if (!runHeavy(budget, () -> populateOther(pickNearest(pendingOthers, focus), budget))) {
+          pass = Pass.OTHERS;
+          return false;
+        }
+      } else if (pendingLoad.isEmpty()) {
+        pass = Pass.POPULATE;
+        if (!countedPopulateTick) {
+          countedPopulateTick = true;
+          if (populateTicks++ >= populateWaitTicks) {
+            giveUpPopulate();
+            continue;
+          }
+        }
+        Long ready = nearestReady(focus);
+        if (ready == null) {
+          return false;
+        }
+        long chunk = ready;
+        if (!runHeavy(budget, () -> populatePending(chunk, budget))) {
+          return false;
+        }
+      } else if (!runHeavy(budget, () -> onePrepare(focus, budget))) {
+        refreshPass();
+        return false;
       }
-      if (pass == before) {
+      if (pendingLoad.isEmpty() && pendingPopulate.isEmpty() && pendingOthers.isEmpty()) {
+        pass = Pass.DONE;
+        return true;
+      }
+      if (!anotherHeavyStep(budget)) {
+        refreshPass();
         return false;
       }
     }
+  }
+
+  private Coord focus() {
+    Coord focus = nearestPlayer.get();
+    return focus == null ? new Coord(0, 0, 0) : focus;
+  }
+
+  private boolean runHeavy(TickBudget budget, Runnable step) {
+    if (!budget.tryHeavy()) {
+      return false;
+    }
+    long before = budget.remainingNanos();
+    step.run();
+    lastStepReducedRemaining = budget.remainingNanos() < before;
     return true;
   }
 
-  private void tickLoad(TickBudget budget) {
-    holdLoaded();
-    if (pendingLoad.isEmpty()) {
-      pass = Pass.POPULATE;
-      return;
+  /** Further heavy steps only while a full-TPS slice is actually shrinking. */
+  private boolean anotherHeavyStep(TickBudget budget) {
+    return budget.isFullTps()
+        && !budget.isBehind()
+        && budget.remainingNanos() > 0
+        && lastStepReducedRemaining;
+  }
+
+  private void onePrepare(Coord focus, TickBudget budget) {
+    Long load = pendingLoad.isEmpty() ? null : pickNearest(pendingLoad, focus);
+    Long populate = nearestReady(focus);
+    boolean choosePopulate = populate != null
+        && (load == null || distanceSq(populate, focus) <= distanceSq(load, focus));
+    if (choosePopulate) {
+      populatePending(populate, budget);
+    } else {
+      loadOne(load, budget);
     }
-    long chunk = pendingLoad.iterator().next();
-    if (!budget.tryHeavy()) {
-      return;
-    }
+  }
+
+  private void loadOne(long chunk, TickBudget budget) {
     int x = ChunkArea.chunkX(chunk);
     int z = ChunkArea.chunkZ(chunk);
     ChunkLoadState before = reservation.stateOf(x, z);
@@ -151,28 +207,8 @@ public final class ChunkPreparePolicy {
     }
   }
 
-  private void tickPopulate(TickBudget budget) {
-    pendingPopulate.removeIf(chunk -> stateOf(chunk) == ChunkLoadState.LOADED_POPULATED);
-    if (pendingPopulate.isEmpty()) {
-      pass = Pass.OTHERS;
-      return;
-    }
-    if (populateTicks++ >= populateWaitTicks) {
-      unpopulatedAtTimeout.addAll(pendingPopulate);
-      logger.warn("Footprint chunks still unpopulated after {} ticks; building anyway (a later populate may overwrite dungeon blocks there): {}",
-          populateWaitTicks, describe(pendingPopulate));
-      pendingPopulate.clear();
-      pass = Pass.OTHERS;
-      return;
-    }
-    long chunk = pendingPopulate.iterator().next();
+  private void populatePending(long chunk, TickBudget budget) {
     if (!hasPopulateNeighbours(chunk)) {
-      // Cannot populate yet (a neighbour unloaded); try the others first.
-      pendingPopulate.remove(chunk);
-      pendingPopulate.add(chunk);
-      return;
-    }
-    if (!budget.tryHeavy()) {
       return;
     }
     int x = ChunkArea.chunkX(chunk);
@@ -181,29 +217,67 @@ public final class ChunkPreparePolicy {
     long start = System.nanoTime();
     reservation.populateAndHold(x, z);
     recordHeavy(budget, chunk, before, System.nanoTime() - start);
-    // Round-robin: if lazychunks or anything else deferred it, retry after the others.
     pendingPopulate.remove(chunk);
     if (stateOf(chunk) != ChunkLoadState.LOADED_POPULATED) {
       pendingPopulate.add(chunk);
     }
   }
 
-  private void tickOthers(TickBudget budget) {
+  private void giveUpPopulate() {
+    unpopulatedAtTimeout.addAll(pendingPopulate);
+    logger.warn("Footprint chunks still unpopulated after {} ticks; building anyway (a later populate may overwrite dungeon blocks there): {}",
+        populateWaitTicks, describe(pendingPopulate));
+    pendingPopulate.clear();
+  }
+
+  private void sweepOthers() {
     pendingOthers.removeIf(chunk -> stateOf(chunk) != ChunkLoadState.LOADED_UNPOPULATED || !hasPopulateNeighbours(chunk));
-    if (pendingOthers.isEmpty()) {
-      pass = Pass.DONE;
-      return;
-    }
-    if (!budget.tryHeavy()) {
-      return;
-    }
-    long chunk = pendingOthers.iterator().next();
+  }
+
+  private void populateOther(long chunk, TickBudget budget) {
     pendingOthers.remove(chunk);
     ChunkLoadState before = stateOf(chunk);
     long start = System.nanoTime();
     reservation.populateOne(ChunkArea.chunkX(chunk), ChunkArea.chunkZ(chunk));
     othersAttempted++;
     recordHeavy(budget, chunk, before, System.nanoTime() - start);
+  }
+
+  private Long nearestReady(Coord focus) {
+    Long best = null;
+    long bestDistance = Long.MAX_VALUE;
+    for (long chunk : pendingPopulate) {
+      if (!hasPopulateNeighbours(chunk)) {
+        continue;
+      }
+      long distance = distanceSq(chunk, focus);
+      if (best == null || distance < bestDistance) {
+        best = chunk;
+        bestDistance = distance;
+      }
+    }
+    return best;
+  }
+
+  private static long pickNearest(Set<Long> chunks, Coord focus) {
+    long best = 0L;
+    long bestDistance = Long.MAX_VALUE;
+    boolean any = false;
+    for (long chunk : chunks) {
+      long distance = distanceSq(chunk, focus);
+      if (!any || distance < bestDistance) {
+        best = chunk;
+        bestDistance = distance;
+        any = true;
+      }
+    }
+    return best;
+  }
+
+  private static long distanceSq(long chunk, Coord focus) {
+    long dx = ChunkArea.chunkCenter(ChunkArea.chunkX(chunk)) - (long) focus.getX();
+    long dz = ChunkArea.chunkCenter(ChunkArea.chunkZ(chunk)) - (long) focus.getZ();
+    return dx * dx + dz * dz;
   }
 
   /** Vanilla populates a chunk only when its +X, +Z and +XZ neighbours are loaded. */
@@ -219,13 +293,26 @@ public final class ChunkPreparePolicy {
     return reservation.stateOf(ChunkArea.chunkX(chunk), ChunkArea.chunkZ(chunk));
   }
 
+  private void refreshPass() {
+    if (!pendingLoad.isEmpty()) {
+      pass = Pass.LOAD;
+    } else if (!pendingPopulate.isEmpty()) {
+      pass = Pass.POPULATE;
+    } else if (!pendingOthers.isEmpty()) {
+      pass = Pass.OTHERS;
+    } else {
+      pass = Pass.DONE;
+    }
+  }
+
   private void recordHeavy(TickBudget budget, long chunk, ChunkLoadState before, long nanos) {
     heavySteps++;
     if (budget.isHeavyForced()) {
       forcedHeavySteps++;
     }
     longestHeavyNanos = Math.max(longestHeavyNanos, nanos);
-    budget.spend(nanos);
+    // A clock that does not move still has to shrink the slice, or a full-TPS tick would spin.
+    budget.spend(Math.max(1L, nanos));
     if (nanos > SLOW_STEP_NANOS) {
       logger.info("Slow prepare step {}ms: pass {}, chunk ({}, {}), state before {}, one chunk.",
           nanos / NANOS_PER_MS, pass, ChunkArea.chunkX(chunk), ChunkArea.chunkZ(chunk), before);

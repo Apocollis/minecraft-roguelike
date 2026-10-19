@@ -67,6 +67,16 @@ public class RogueConfig {
    * traded for progress on busy servers. Lower = faster prepare, more spikes.
    */
   public static final RogueConfig PREPARE_HEAVY_STEP_MAX_INTERVAL_TICKS = new RogueConfig("prepareHeavyStepMaxIntervalTicks").withValue(100);
+  /** Load factor below which Chunk Steward pacing pauses. 1.0 is 20 TPS, 0.0 is at or below 15. Used only when Chunk Steward is loaded. */
+  public static final RogueConfig STEWARD_MIN_LOAD_FACTOR = new RogueConfig("stewardMinLoadFactor").withValue(0.5);
+  /** Floor of the per-tick slice, in ms, when Chunk Steward is in the full-TPS band (load factor >= 0.9 or measured TPS >= 19.5). */
+  public static final RogueConfig STEWARD_MIN_SLICE_MS = new RogueConfig("stewardMinSliceMs").withValue(8.0);
+  /** Ceiling of that full-TPS slice, in ms. An existing cfg value is kept; this default applies only when the key is absent. */
+  public static final RogueConfig STEWARD_MAX_SLICE_MS = new RogueConfig("stewardMaxSliceMs").withValue(40.0);
+  /** Slice, in ms, on a tick Chunk Steward pacing has paused. A catch-up tick stays at 0. */
+  public static final RogueConfig STEWARD_PAUSED_SLICE_MS = new RogueConfig("stewardPausedSliceMs").withValue(2.0);
+  /** Longest wait, in ticks, between steps while Chunk Steward pacing is active. Minimum 1. */
+  public static final RogueConfig STEWARD_MAX_INTERVAL_TICKS = new RogueConfig("stewardMaxIntervalTicks").withValue(20);
 
   private final String name;
   private String stringValue;
@@ -189,6 +199,21 @@ public class RogueConfig {
     }
     if (!configurationMap.containsKey(PREPARE_HEAVY_STEP_MAX_INTERVAL_TICKS.name)) {
       PREPARE_HEAVY_STEP_MAX_INTERVAL_TICKS.setInt(PREPARE_HEAVY_STEP_MAX_INTERVAL_TICKS.intValue);
+    }
+    if (!configurationMap.containsKey(STEWARD_MIN_LOAD_FACTOR.name)) {
+      STEWARD_MIN_LOAD_FACTOR.setDouble(STEWARD_MIN_LOAD_FACTOR.doubleValue);
+    }
+    if (!configurationMap.containsKey(STEWARD_MIN_SLICE_MS.name)) {
+      STEWARD_MIN_SLICE_MS.setDouble(STEWARD_MIN_SLICE_MS.doubleValue);
+    }
+    if (!configurationMap.containsKey(STEWARD_MAX_SLICE_MS.name)) {
+      STEWARD_MAX_SLICE_MS.setDouble(STEWARD_MAX_SLICE_MS.doubleValue);
+    }
+    if (!configurationMap.containsKey(STEWARD_PAUSED_SLICE_MS.name)) {
+      STEWARD_PAUSED_SLICE_MS.setDouble(STEWARD_PAUSED_SLICE_MS.doubleValue);
+    }
+    if (!configurationMap.containsKey(STEWARD_MAX_INTERVAL_TICKS.name)) {
+      STEWARD_MAX_INTERVAL_TICKS.setInt(STEWARD_MAX_INTERVAL_TICKS.intValue);
     }
   }
 

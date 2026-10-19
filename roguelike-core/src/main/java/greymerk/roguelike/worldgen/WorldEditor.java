@@ -150,6 +150,14 @@ public interface WorldEditor {
   }
 
   /** False when the backing world is gone or client-side. */
+  /**
+   * Block position of the nearest player, or {@code target} when the world has no player.
+   * Prepare uses this to load and populate the closest footprint chunks first.
+   */
+  default Coord getNearestPlayerPos(Coord target) {
+    return target;
+  }
+
   default boolean isWorldAvailable() {
     return true;
   }

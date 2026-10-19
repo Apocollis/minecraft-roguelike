@@ -23,7 +23,12 @@ Code defaults live in `RogueConfig`. **Devbox often overrides them.** Missing ke
 
 | Key | Code default | Meaning |
 |-----|--------------|---------|
-| `prepareHeavyStepMaxIntervalTicks` | 100 | Longest wait (ticks) between heavy chunk steps (a load or populate) while a dungeon prepares its footprint. Past it one runs even while the server is catching up. Lower = faster prepare, more lag spikes on a busy server; very high (e.g. 1200) = only when the server keeps up. Minimum 1. |
+| `prepareHeavyStepMaxIntervalTicks` | 100 | Longest wait (ticks) between heavy chunk steps while a dungeon prepares its footprint, **when Chunk Steward is not loaded**. Past it one runs even while the server is catching up. Minimum 1. |
+| `stewardMinLoadFactor` | 0.5 | With Chunk Steward: pause for server load only when its load factor is below this. 1.0 is 20 TPS, 0.0 is at or below 15 TPS. |
+| `stewardMinSliceMs` | 8 | With Chunk Steward, in the full-TPS band (measured TPS ≥ 19.5, or load factor ≥ 0.9): floor of the per-tick slice, in ms. |
+| `stewardMaxSliceMs` | 40 | Ceiling of that slice. The slice is `clamp(headroom, min, max)`. An existing cfg value is kept; this default applies only when the key is absent. |
+| `stewardPausedSliceMs` | 2 | Slice on a paused Steward tick. A catch-up tick (no sleep before it) stays at 0. |
+| `stewardMaxIntervalTicks` | 20 | With Chunk Steward: longest wait between a heavy chunk step and between normal steps. Minimum 1. |
 
 ## Other keys often customized in Arcana
 
