@@ -39,9 +39,22 @@ Tick-sliced gen **never calls** `Dungeon.generate()` as a single return. Anythin
 - Level 0 near `TOPLEVEL` (50); deeper levels step down by spacing.
 - Stairwells between floors: `LinkerRoom` (see [themes.md](themes.md) for bars).
 
+### Level count (settings JSON)
+
+A dungeon has 1 to 10 levels (default **10**). Precedence:
+
+1. `"numLevels": 3`, or the integer form `"levels": 3`, in the setting's own file. Outside 1–10 is a parse error.
+2. The length of the setting's own `numRooms` list: `"numRooms": [15, 20, 25]` gives 3 levels. More than 10 entries is a parse error; `[]` changes nothing.
+3. The inherited count, whether the parent set it with `numLevels` or `numRooms`. When several parents set it, the last one in `inherit` wins.
+4. 10.
+
+A child that inherits a layout with a short `numRooms` list (for example `[8, 8, 8, 8, 8]`) gets that shorter depth. Set `"numLevels": 10` on the child to get full depth back.
+
+Only 10-level dungeons get `BottomLevelSupports`. A pit room never digs below the dungeon's bottom level.
+
 ## Foundations (Arcana)
 
-`FoundationSupport` / `BottomLevelSupports` (after-task):
+`FoundationSupport` / `BottomLevelSupports` (after-task, 10-level dungeons only):
 
 - Probe min Y is **−64**, not `BOTTOM_OF_WORLD_HEIGHT` (5).
 - Floor search is **below `levelY` only** (`levelY-1` down to `levelY - VERTICAL_SPACING`).

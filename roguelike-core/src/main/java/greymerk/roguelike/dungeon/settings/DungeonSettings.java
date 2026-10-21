@@ -33,6 +33,8 @@ public class DungeonSettings {
   private final LootRuleManager lootRules = new LootRuleManager();
   private final List<LootTableRule> lootTables = new ArrayList<>();
   private final Set<SettingsType> overrides = new HashSet<>();
+  // null means not set; getNumLevels() then falls back to the level keys (10 by default)
+  private Integer numLevels;
 
   public DungeonSettings() {
     IntStream.range(0, MAXIMUM_COUNT_OF_LEVELS)
@@ -63,6 +65,7 @@ public class DungeonSettings {
     }
     dungeonSettings.towerSettings = dungeonSettings.getTowerSettings(toInherit, this);
     dungeonSettings.spawnCriteria = new SpawnCriteria().inherit(this.spawnCriteria).inherit(toInherit.spawnCriteria);
+    dungeonSettings.numLevels = numLevels != null ? numLevels : toInherit.numLevels;
     IntStream.range(0, MAXIMUM_COUNT_OF_LEVELS)
         .forEach(level -> {
           LevelSettings parent = toInherit.levels.get(level);
@@ -94,6 +97,7 @@ public class DungeonSettings {
     inherit.addAll(toCopy.inherit);
     overrides.addAll(toCopy.overrides);
     exclusive = toCopy.exclusive;
+    numLevels = toCopy.numLevels;
     lootRules.merge(toCopy.lootRules);
     lootTables.addAll(toCopy.lootTables);
     for (int level = 0; level < MAXIMUM_COUNT_OF_LEVELS; level++) {
@@ -146,11 +150,23 @@ public class DungeonSettings {
   }
 
   public int getNumLevels() {
+    if (numLevels != null) {
+      return Math.max(1, Math.min(MAXIMUM_COUNT_OF_LEVELS, numLevels));
+    }
     if (levels.isEmpty()) {
       return MAXIMUM_COUNT_OF_LEVELS;
     }
     int maxKey = levels.keySet().stream().mapToInt(Integer::intValue).max().orElse(0);
-    return Math.max(5, maxKey + 1);
+    return Math.max(1, maxKey + 1);
+  }
+
+  /** The level count set by {@code numLevels}, {@code levels} or a {@code numRooms} list; null if none was given. */
+  public Integer getNumLevelsExplicit() {
+    return numLevels;
+  }
+
+  public void setNumLevels(Integer numLevels) {
+    this.numLevels = numLevels;
   }
 
   public Set<SettingsType> getOverrides() {

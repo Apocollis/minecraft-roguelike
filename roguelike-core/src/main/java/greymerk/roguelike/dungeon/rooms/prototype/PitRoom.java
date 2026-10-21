@@ -7,6 +7,7 @@ import com.github.fnar.minecraft.block.SingleBlockBrush;
 import com.github.fnar.minecraft.block.decorative.TorchBlock;
 
 import java.util.List;
+import java.util.Random;
 
 import greymerk.roguelike.dungeon.Dungeon;
 import greymerk.roguelike.dungeon.base.BaseRoom;
@@ -48,10 +49,20 @@ public class PitRoom extends BaseRoom {
         .stroke(worldEditor, chest);
   }
 
+  /**
+   * 1 to 9 layers in a 10-level dungeon from level 0. Never deeper than the levels below
+   * {@code level}; a pit on the bottom level stays 1 layer deep.
+   */
+  static int chooseLayersDepth(Random random, int dungeonLevelCount, int level) {
+    int levelsBelow = (dungeonLevelCount - 1) - Math.max(0, level);
+    int maxLayers = Math.max(1, Math.min(Dungeon.NUM_LAYERS - 1, levelsBelow));
+    return random.nextInt(maxLayers) + 1;
+  }
+
   private void generatePit(Coord at) {
     Coord pit = at.copy().down();
 
-    int layersDepth = random().nextInt(Dungeon.NUM_LAYERS - 1) + 1;
+    int layersDepth = chooseLayersDepth(random(), levelSettings.getDungeonLevelCount(), levelSettings.getLevel());
     int blocksDepth = layersDepth * Dungeon.VERTICAL_SPACING;
     int bottomOfPit = Math.max(Dungeon.BOTTOM_OF_WORLD_HEIGHT, pit.getY() - blocksDepth) + 1; // +1 here to align with levels
 

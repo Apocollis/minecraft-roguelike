@@ -321,8 +321,10 @@ public class Dungeon {
     origin = coord.copy().setY(TOPLEVEL);
     levels.clear();
     editor.getOrCreateDungeonWaystoneName(origin);
-    IntStream.range(0, dungeonSettings.getNumLevels())
+    int numLevels = dungeonSettings.getNumLevels();
+    IntStream.range(0, numLevels)
         .mapToObj(dungeonSettings::getLevelSettings)
+        .map(levelSettings -> levelSettings.withDungeonLevelCount(numLevels))
         .map(DungeonLevel::new)
         .forEach(levels::add);
   }

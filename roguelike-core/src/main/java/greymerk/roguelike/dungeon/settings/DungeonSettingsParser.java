@@ -86,6 +86,8 @@ public class DungeonSettingsParser {
     parseOverrides(root, dungeonSettings);
     parseInherit(root, dungeonSettings);
     parseLootTables(root, dungeonSettings);
+    // numLevels before numRooms: an explicit count wins over the numRooms list length
+    parseNumLevels(root, dungeonSettings);
     parseRoomCount(root, dungeonSettings);
     parseScatter(root, dungeonSettings);
     parseLayouts(root, dungeonSettings);
@@ -197,12 +199,37 @@ public class DungeonSettingsParser {
     }
   }
 
+  private static void parseNumLevels(JsonObject root, DungeonSettings dungeonSettings) {
+    if (root.has("num_levels")) {
+      throw new DungeonSettingParseException("Please update field \"num_levels\" to \"numLevels\" to conform to JSON standards.");
+    }
+    if (root.has("numLevels")) {
+      dungeonSettings.setNumLevels(validateNumLevels(root.get("numLevels").getAsInt(), "numLevels"));
+    } else if (root.has("levels") && root.get("levels").isJsonPrimitive() && root.get("levels").getAsJsonPrimitive().isNumber()) {
+      dungeonSettings.setNumLevels(validateNumLevels(root.get("levels").getAsInt(), "levels"));
+    }
+  }
+
+  private static int validateNumLevels(int numLevels, String fieldName) {
+    if (numLevels < 1 || numLevels > DungeonSettings.MAXIMUM_COUNT_OF_LEVELS) {
+      throw new DungeonSettingParseException("\"" + fieldName + "\" must be between 1 and " + DungeonSettings.MAXIMUM_COUNT_OF_LEVELS + " but was " + numLevels + ".");
+    }
+    return numLevels;
+  }
+
   private static void parseRoomCount(JsonObject root, DungeonSettings dungeonSettings) {
     if (root.has("num_rooms")) {
       throw new DungeonSettingParseException("Please update field \"num_rooms\" to \"numRooms\" to conform to JSON standards.");
     }
     if (root.has("numRooms")) {
       JsonArray arr = root.get("numRooms").getAsJsonArray();
+      if (arr.size() > DungeonSettings.MAXIMUM_COUNT_OF_LEVELS) {
+        throw new DungeonSettingParseException("\"numRooms\" array length must be at most " + DungeonSettings.MAXIMUM_COUNT_OF_LEVELS + " but was " + arr.size() + ".");
+      }
+      // listing room counts for fewer levels sizes the dungeon to that many levels
+      if (arr.size() > 0 && dungeonSettings.getNumLevelsExplicit() == null) {
+        dungeonSettings.setNumLevels(arr.size());
+      }
       for (int i = 0; i < arr.size(); ++i) {
         JsonElement jsonElement = arr.get(i);
         if (jsonElement.isJsonNull()) {

@@ -42,6 +42,8 @@ public class LevelSettings {
   private SpawnerSettings spawners = new SpawnerSettings();
   private LayoutGenerator.Type generator;
   private Set<Filter> filters = new HashSet<>();
+  // levels in the dungeon being built; set by Dungeon.beginBuild, not inherited
+  private int dungeonLevelCount = DungeonSettings.MAXIMUM_COUNT_OF_LEVELS;
 
   public LevelSettings(int level) {
     this.level = level;
@@ -105,6 +107,7 @@ public class LevelSettings {
     spawners = new SpawnerSettings(toCopy.spawners);
     filters = Sets.newHashSet(toCopy.filters);
     generator = toCopy.generator;
+    dungeonLevelCount = toCopy.dungeonLevelCount;
   }
 
   public LayoutGenerator.Type getGeneratorType() {
@@ -145,6 +148,15 @@ public class LevelSettings {
 
   public LevelSettings withLevel(int level) {
     this.level = level;
+    return this;
+  }
+
+  public int getDungeonLevelCount() {
+    return dungeonLevelCount;
+  }
+
+  public LevelSettings withDungeonLevelCount(int dungeonLevelCount) {
+    this.dungeonLevelCount = dungeonLevelCount;
     return this;
   }
 
