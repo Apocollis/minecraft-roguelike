@@ -13,12 +13,12 @@ Supporting references:
 | [themes.md](themes.md) | Theme JSON, `primary.bars` vs `secondary.bars` |
 | [config.md](config.md) | `roguelike.cfg` keys vs Devbox overrides |
 | [mixins.md](mixins.md) | SRG rules, crashes, what not to mixin |
-| [build-and-deploy.md](build-and-deploy.md) | JDK 8, jar name, Devbox deploy |
+| [build-and-deploy.md](build-and-deploy.md) | JDK 25 / Java 21, Unimined, jar name, Devbox deploy |
 | [issues-and-fixes.md](issues-and-fixes.md) | Bugs we hit and how they were fixed |
 | [tweaks-handoff.md](tweaks-handoff.md) | Dungeon mixin cleanup in aqtweaks |
 | [conventions.md](conventions.md) | Permissions, plan-before-code, placement |
 | [rcst-to-room.md](rcst-to-room.md) | Recurrent Complex `.rcst` export → room overlay |
 
 **Modid:** `roguelike`  
-**Current version:** `2.5.7`
-**Jar name:** `RoguelikeDungeons-Arcana-2.5.7.jar` (1.12.2 only; MC version is not in the filename)
+**Current version:** `3.0.0`
+**Jar name:** `RoguelikeDungeons-Arcana-3.0.0.jar` (1.12.2 only; MC version is not in the filename)

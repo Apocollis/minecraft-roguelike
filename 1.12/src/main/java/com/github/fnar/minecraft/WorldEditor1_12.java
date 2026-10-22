@@ -368,7 +368,7 @@ public class WorldEditor1_12 implements WorldEditor {
   }
 
   private void bulkPlace(BlockPos pos, IBlockState state) {
-    Chunk chunk = world.getChunkFromBlockCoords(pos);
+    Chunk chunk = world.getChunk(pos);
     IBlockState old = chunk.getBlockState(pos);
     int oldOpacity = old.getLightOpacity(world, pos);
     int oldLight = old.getLightValue(world, pos);
@@ -469,7 +469,7 @@ public class WorldEditor1_12 implements WorldEditor {
     int maxZ = (pos.getZ() + LIGHT_AREA_RADIUS) >> 4;
     for (int cx = minX; cx <= maxX; cx++) {
       for (int cz = minZ; cz <= maxZ; cz++) {
-        if (provider.id2ChunkMap.get(ChunkPos.asLong(cx, cz)) == null) {
+        if (provider.loadedChunks.get(ChunkPos.asLong(cx, cz)) == null) {
           return true;
         }
       }
@@ -580,7 +580,7 @@ public class WorldEditor1_12 implements WorldEditor {
       if (!ignoreResendWindow && last != null && now - last < CHUNK_RESEND_TICKS) {
         continue;
       }
-      Chunk chunk = worldServer.getChunkProvider().id2ChunkMap.get(ChunkPos.asLong(chunkPos.x, chunkPos.z));
+      Chunk chunk = worldServer.getChunkProvider().loadedChunks.get(ChunkPos.asLong(chunkPos.x, chunkPos.z));
       if (chunk != null) {
         chunk.markDirty();
         PlayerChunkMapEntry entry = worldServer.getPlayerChunkMap().getEntry(chunkPos.x, chunkPos.z);

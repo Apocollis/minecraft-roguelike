@@ -67,7 +67,7 @@ Only 10-level dungeons get `BottomLevelSupports`. A pit room never digs below th
 - Light: every position whose light opacity or value changed is queued (deduplicated) and drained with `world.checkLight` within the tick budget. Skips are logged as missing-chunk (a footprint bug) or height skips.
 - Chunk packets go only to players watching the chunk (`PlayerChunkMapEntry`), at most every 20 ticks per chunk, plus a final send after the drain.
 - Settings JSON is parsed once and cached; `/roguelike settings reload` and `/roguelike config reload` clear it.
-- Loaded-chunk checks peek `ChunkProviderServer.id2ChunkMap`; `getLoadedChunk` cancels pending unloads and must not be used for polling.
+- Loaded-chunk checks peek `ChunkProviderServer.loadedChunks` (`id2ChunkMap` in the old snapshot mappings); `getLoadedChunk` cancels pending unloads and must not be used for polling.
 
 ## Vanilla structure avoidance
 

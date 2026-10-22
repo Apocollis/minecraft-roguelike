@@ -1,115 +1,70 @@
-buildscript {
-    repositories {
-        maven { url = 'https://maven.minecraftforge.net/' }
-    }
-    dependencies {
-        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '6.+', changing: true
-
-    }
-}
-apply plugin: 'net.minecraftforge.gradle'
-
-version = "2.5.7"
-group = "com.github.apocollis"
-archivesBaseName = "RoguelikeDungeons-Arcana"
-
-java.toolchain.languageVersion = JavaLanguageVersion.of(8)
-
-minecraft {
-    mappings channel: 'snapshot', version: '20171003-1.12'
-
-    runs {
-
-        client {}
-
-        server {}
-
-        data {
-            args '--mod', 'roguelikedungeons', '--all', '--output', file('src/generated/resources/')
-        }
-
-        configureEach {
-            workingDirectory project.file('run')
-
-            jvmArg "-Dlog4j.configurationFile=log4j.xml"
-            property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
-            property 'forge.logging.console.level', 'debug'
-            property 'fml.ignoreInvalidMinecraftCertificates', 'true'
-            property 'fml.ignorePatchDiscrepancies', 'true'
-
-            mods {
-                roguelike {
-                    source sourceSets.main
-                }
-            }
-        }
-
-    }
+plugins {
+    id 'java'
+    id 'xyz.wagyourtail.unimined' version '1.4.17-kappa'
+    // genDependencySources decompiles Minecraft, Forge, Cleanroom and library jars into
+    // ~/.cache/mixinmcp/decompiled/ for looking up vanilla/Forge code and mixin targets.
+    // Applied here (not the root) so it sees the Unimined classpath.
+    id 'dev.mixinmcp.decompile' version '1.5.0'
 }
 
-repositories {
-    mavenCentral()
+base {
+    archivesName = "RoguelikeDungeons-Arcana"
+}
+
+// The jar bundles roguelike-core's classes and resources, so its source sets must be configured first.
+evaluationDependsOn(':roguelike-core')
+def core = project(':roguelike-core')
+
+unimined.minecraft {
+    version project.minecraft_version
+
+    mappings {
+        mcp('stable', '39-1.12')
+    }
+
+    cleanroom {
+        loader(project.cleanroom_loader_version)
+    }
+
+    defaultRemapJar = true
+
+    // mixinmcp: the Minecraft/Forge/Cleanroom dev jar is not on a resolvable configuration,
+    // so hand it over explicitly (resolved when genDependencySources runs).
+    def minecraftConfig = delegate
+    mixinmcp.extraJars.from(provider { minecraftConfig.minecraftFileDev })
+}
+
+// Cleanroom 0.6.13 depends on Reflect 1.6.4, whose META-INF/versions/26 classes (class major 70)
+// TinyRemapper cannot read. 1.6.3 has them too; 1.6.2 is the newest without (highest major 68).
+// Compile/remap classpath only: at runtime Cleanroom loads its own Reflect.
+configurations.configureEach {
+    resolutionStrategy.force 'net.lenni0451:Reflect:1.6.2'
 }
 
 dependencies {
-    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    implementation core
 
-    implementation project(':roguelike-core')
+    // Chunk Steward's pacing API, compile-only: the same build as the DEVBOX mods folder
+    // (ChunkSteward-0.3, API_VERSION 2). Refresh it whenever Steward's API changes.
+    compileOnly files('libs/ChunkSteward-0.3.jar')
 
-    compileOnly 'org.spongepowered:mixin:0.8.5'
-    compileOnly 'org.projectlombok:lombok:1.18.20'
-    annotationProcessor 'org.projectlombok:lombok:1.18.20'
-
-    testCompileOnly 'org.projectlombok:lombok:1.18.20'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.20'
-
-    testImplementation "junit:junit:4.11"
-
-    testImplementation "org.mockito:mockito-core:1.+"
-    testImplementation("org.assertj:assertj-core:3.11.1")
-    testImplementation 'org.hamcrest:hamcrest-core:1.3'
-}
-
-configurations.configureEach {
-    resolutionStrategy {
-        // Force the specific versions Forge 1.12.2 expects
-        force 'org.apache.logging.log4j:log4j-api:2.8.1'
-        force 'org.apache.logging.log4j:log4j-core:2.8.1'
-        // Force an older SLF4J that doesn't have Java 9 modules
-        force 'org.slf4j:slf4j-api:1.7.25'
-
-        // Optional: Modern FG6 usually handles ASM, but kept if you have specific 1.12.2 crashes
-        force 'org.ow2.asm:asm-debug-all:5.2'
-    }
-
-    // excluded for causing a crash
-    exclude group: "net.minecraftforge", module: "mergetool"
-    // excluded for causing a crash
-    exclude group: 'org.apache.logging.log4j', module: 'log4j-slf4j18-impl'
+    compileOnly "org.projectlombok:lombok:${lombok_version}"
+    annotationProcessor "org.projectlombok:lombok:${lombok_version}"
 }
 
 processResources {
-    // Gradle 8.x prefers EXCLUDE or WARN to handle overlapping files from subprojects
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
-    // Define the properties we want to inject
     var replaceProperties = [
             version  : project.version,
             mcversion: project.minecraft_version
     ]
-
-    // Register inputs so Gradle knows when to re-run this task
     inputs.properties replaceProperties
 
-    // 1. Handle the core project resources (since you're bundling it)
-    from(project(':roguelike-core').sourceSets.main.resources.srcDirs)
+    from(core.sourceSets.main.resources.srcDirs)
 
-    // 2. Handle this project's resources
-    from(sourceSets.main.resources.srcDirs) {
-        // Use 'replace' or 'expand', but only on specific files
-        filesMatching('mcmod.info') {
-            expand replaceProperties
-        }
+    filesMatching('mcmod.info') {
+        expand replaceProperties
     }
 }
 
@@ -124,41 +79,109 @@ jar {
                 "Implementation-Version"     : project.version,
                 "Implementation-Vendor"      : "Apocollis",
                 "Implementation-Timestamp"   : new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+                "ModType"                    : "CRL",
                 "FMLCorePluginContainsFMLMod": "true",
                 "ForceLoadAsMod"             : "true",
                 "MixinConfigs"               : "mixins.roguelike.json"
         ])
     }
 
-    from project(':roguelike-core').sourceSets.main.output
+    from core.sourceSets.main.output
+}
+
+// Every mixin is remap = false with SRG names, so Unimined has nothing to remap in them. Without
+// this it writes "refmap": "mixins.roguelike-refmap.json" into the config (Cleanroom then warns it
+// cannot be read). Do not use disableRefmap(): it strips @Accessor values such as "field_75039_c".
+tasks.named('remapJar') {
+    mixinRemap {
+        off()
+    }
+}
+
+// Fails the build unless the jar is the remapped (SRG) release jar. An MCP-named jar once reached
+// DEVBOX and produced ~400,000 NoSuchMethodError lines. No refmap check: every mixin is
+// remap = false with SRG names, so no refmap is produced.
+tasks.register('verifyReleaseJar') {
+    group = 'verification'
+    description = 'Checks the remapped jar: version, mixin config, class major 65, SRG references'
+    dependsOn 'remapJar'
+    def jarFile = tasks.named('remapJar').flatMap { it.archiveFile }
+    def modSource = file('src/main/java/com/github/fnar/roguelike/Roguelike.java')
+    def expectedVersion = project.version.toString()
+    inputs.file(jarFile)
+    inputs.file(modSource)
+    doLast {
+        def jar = jarFile.get().asFile
+        if (!jar.exists()) {
+            throw new GradleException("Missing remapped jar: ${jar}")
+        }
+        if (!modSource.text.contains("version = \"${expectedVersion}\"")) {
+            throw new GradleException("Roguelike.version does not match build.gradle version ${expectedVersion}")
+        }
+        def zip = new java.util.zip.ZipFile(jar)
+        try {
+            def mixinConfig = zip.getEntry('mixins.roguelike.json')
+            if (mixinConfig == null) {
+                throw new GradleException("mixins.roguelike.json missing from ${jar.name}")
+            }
+            if (zip.getInputStream(mixinConfig).getText('UTF-8').contains('"refmap"')) {
+                throw new GradleException("mixins.roguelike.json names a refmap, but none is built (all mixins are remap = false)")
+            }
+            def tooltip = zip.getEntry('greymerk/roguelike/ItemTooltip.class')
+            if (tooltip == null) {
+                throw new GradleException("ItemTooltip.class missing from ${jar.name}")
+            }
+            def tooltipText = new String(zip.getInputStream(tooltip).readAllBytes(), 'ISO-8859-1')
+            if (!tooltipText.contains('func_77942_o') || tooltipText.contains('hasTagCompound')) {
+                throw new GradleException("${jar.name} is not remapped: ItemTooltip must call func_77942_o, not hasTagCompound")
+            }
+            zip.entries().each { e ->
+                if (!e.name.endsWith('.class')) {
+                    return
+                }
+                def stream = zip.getInputStream(e)
+                def bytes = stream.readAllBytes()
+                stream.close()
+                int major = ((bytes[6] & 0xff) << 8) | (bytes[7] & 0xff)
+                if (major != 65) {
+                    throw new GradleException("${e.name} class major ${major}, expected 65 (Java 21). Do not change options.release.")
+                }
+            }
+        } finally {
+            zip.close()
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn 'verifyReleaseJar'
 }
 
 def defaultDevboxModsDir = "${System.getProperty('user.home')}/curseforge/minecraft/Instances/Arcana Quest DEVBOX/mods"
-def curseforgeModsDir = file(findProperty('devbox.mods.dir') ?: defaultDevboxModsDir)
+def devboxModsDir = file(findProperty('devbox.mods.dir') ?: defaultDevboxModsDir)
 
+// Deploys only the verified, remapped jar. Not wired to build: run it explicitly
+// (scripts/build_gradle.ps1 does by default).
 tasks.register('deployToDevbox', Copy) {
     group = 'distribution'
-    description = 'Replace RoguelikeDungeons-Arcana jar in CurseForge Arcana Quest DEVBOX mods'
-    dependsOn jar
+    description = 'Replace the RoguelikeDungeons-Arcana jar in the CurseForge Arcana Quest DEVBOX mods folder'
+    dependsOn 'verifyReleaseJar'
+    def remapped = tasks.named('remapJar').flatMap { it.archiveFile }
     onlyIf {
-        if (!curseforgeModsDir.exists()) {
-            logger.lifecycle("Skipping deployToDevbox: mods dir not found at ${curseforgeModsDir}")
+        if (!devboxModsDir.exists()) {
+            logger.lifecycle("Skipping deployToDevbox: mods dir not found at ${devboxModsDir}")
             return false
         }
         return true
     }
-    from jar.archiveFile
-    into curseforgeModsDir
+    from remapped
+    into devboxModsDir
     doFirst {
-        delete fileTree(curseforgeModsDir) {
+        delete fileTree(devboxModsDir) {
             include 'RoguelikeDungeons-Arcana-*.jar'
         }
     }
     doLast {
-        logger.lifecycle("Deployed ${jar.archiveFile.get().asFile.name} to ${curseforgeModsDir}")
+        logger.lifecycle("Deployed ${remapped.get().asFile.name} to ${devboxModsDir}")
     }
-}
-
-tasks.named('build').configure {
-    finalizedBy('deployToDevbox')
 }

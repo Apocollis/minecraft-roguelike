@@ -10,7 +10,7 @@ import com.github.fnar.minecraft.world.BiomeTag;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,8 +22,8 @@ import greymerk.roguelike.worldgen.WorldEditor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -100,7 +100,6 @@ public class SpawnCriteriaTest {
 
   @Test
   public void isValid_ReturnsTrue_WhenOnlyBiomeTypeCriteriaIsProvidedAndSatisfied() {
-    when(worldEditor.getBiomeName(any(Coord.class))).thenReturn("minecraft:ice_mountains");
     when(worldEditor.isBiomeTypeAt(eq(BiomeTag.SNOWY), any(Coord.class))).thenReturn(true);
 
     assertThat(newSpawnCriteriaWithBiomeTag("snowy").isValid(worldEditor, coord)).isTrue();
@@ -108,7 +107,7 @@ public class SpawnCriteriaTest {
 
   @Test
   public void isValid_ReturnsFalse_WhenOnlyBiomeTypeCriteriaIsProvidedAndIsNotSatisfied() {
-    when(worldEditor.getBiomeName(any(Coord.class))).thenReturn("minecraft:beach");
+    when(worldEditor.isBiomeTypeAt(eq(BiomeTag.SNOWY), any(Coord.class))).thenReturn(false);
 
     assertThat(newSpawnCriteriaWithBiomeTag("snowy").isValid(worldEditor, coord)).isFalse();
   }

@@ -1,32 +1,24 @@
-apply plugin: 'idea'
-apply plugin: 'java'
-
-version = "2.5.7"
+version = "3.0.0"
 group = "com.github.apocollis"
-archivesBaseName = "RoguelikeDungeons-Arcana"
-
-sourceCompatibility = targetCompatibility = '1.8' // Need this here so eclipse task generates correctly.
-compileJava {
-    sourceCompatibility = targetCompatibility = '1.8'
-}
-
-repositories {
-    mavenCentral()
-}
 
 subprojects {
     apply plugin: 'java'
     group = 'com.github.apocollis'
-}
+    version = rootProject.version
 
-project(':1.12') {
-    dependencies {
-        implementation project(':roguelike-core')
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(25)
+        }
+    }
+
+    // Java 21 bytecode (class major 65). Mixin/Fugue refuse 66+, so do not raise this.
+    tasks.withType(JavaCompile).configureEach {
+        options.release = 21
+        options.encoding = 'UTF-8'
+    }
+
+    repositories {
+        mavenCentral()
     }
 }
-
-//project(':1.14') {
-//    dependencies {
-//        implementation project(':roguelike-core')
-//    }
-//}

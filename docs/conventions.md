@@ -27,4 +27,4 @@ Vanilla targets: SRG + `remap = false`. Helpers: `private`. Never mixin `World` 
 
 ## Pack context
 
-This fork is built for **Arcana Quest DEVBOX**: Forge 1.12.2 + Cleanroom Relauncher + Tweaks. Gameplay assumptions (Rustic lanterns, Y −64, village vs temple distances) are pack-driven. Code defaults may differ from the Devbox `roguelike.cfg`.
+This fork is built for **Arcana Quest DEVBOX**: Forge 1.12.2 + Cleanroom Relauncher (Cleanroom 0.6.13 on Java 25) + Chunk Steward + Tweaks. Gameplay assumptions (Rustic lanterns, Y −64, village vs temple distances) are pack-driven. Code defaults may differ from the Devbox `roguelike.cfg`.

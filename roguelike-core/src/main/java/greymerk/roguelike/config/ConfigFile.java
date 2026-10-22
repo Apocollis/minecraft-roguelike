@@ -9,6 +9,7 @@ import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -20,7 +21,7 @@ public class ConfigFile {
 
   public static void read(ConfigurationMap configFile, String filename) {
     try {
-      BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(Paths.get(filename))));
+      BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(Paths.get(filename)), StandardCharsets.UTF_8));
       while (true) {
         Configuration config = INIParser.readLine(reader);
         if (config == null) {
@@ -38,7 +39,7 @@ public class ConfigFile {
 
     stream.getChannel().truncate(0);
 
-    BufferedWriter buffered = new BufferedWriter(new OutputStreamWriter(stream));
+    BufferedWriter buffered = new BufferedWriter(new OutputStreamWriter(stream, StandardCharsets.UTF_8));
 
     for (Configuration configuration : configFile.asList()) {
       INIParser.write(configuration, buffered);

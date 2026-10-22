@@ -57,7 +57,7 @@ public class ForgeChunkReservation implements ChunkReservation {
 
   @Override
   public void loadAndHold(int chunkX, int chunkZ) {
-    world.getChunkFromChunkCoords(chunkX, chunkZ);
+    world.getChunk(chunkX, chunkZ);
     hold(chunkX, chunkZ);
   }
 
@@ -70,7 +70,7 @@ public class ForgeChunkReservation implements ChunkReservation {
     if (!(world instanceof WorldServer)) {
       return null;
     }
-    return ((WorldServer) world).getChunkProvider().id2ChunkMap.get(ChunkPos.asLong(chunkX, chunkZ));
+    return ((WorldServer) world).getChunkProvider().loadedChunks.get(ChunkPos.asLong(chunkX, chunkZ));
   }
 
   @Override
@@ -109,7 +109,7 @@ public class ForgeChunkReservation implements ChunkReservation {
   }
 
   /**
-   * Loads through the normal path ({@code getChunkFromChunkCoords}) so Forge, Depths Update and
+   * Loads through the normal path ({@code getChunk}) so Forge, Depths Update and
    * lazychunks hooks all run, while {@link PopulateSuppress} cancels every populate the load starts.
    * Forced first, right before the load, so lazychunks' ticket exemption and Forge both see it.
    */
@@ -118,7 +118,7 @@ public class ForgeChunkReservation implements ChunkReservation {
     hold(chunkX, chunkZ);
     PopulateSuppress.begin();
     try {
-      world.getChunkFromChunkCoords(chunkX, chunkZ);
+      world.getChunk(chunkX, chunkZ);
     } finally {
       PopulateSuppress.end();
     }

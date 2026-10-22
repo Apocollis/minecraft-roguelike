@@ -20,21 +20,15 @@ git clone https://github.com/Apocollis/minecraft-roguelike
 
 ### Build
 
-From the repo root (Java 8):
+From the repo root (needs JDK 25 at `C:\Program Files\Zulu\zulu-25`, or set `ROGUELIKE_JAVA_HOME`):
 
 ```
-gradlew.bat :1.12:build
+.\scripts\build_gradle.ps1
 ```
 
-Or from `1.12/`:
+The remapped release jar is written to `1.12/build/libs/` (e.g. `RoguelikeDungeons-Arcana-3.0.0.jar`). The `-dev.jar` next to it is MCP-mapped and only for dev runs. This version requires Cleanroom; the Java 8 / Forge line is on branch `2.5.x`.
 
-```
-gradlew.bat build
-```
-
-The jar is written to `1.12/build/libs/` (e.g. `RoguelikeDungeons-Arcana-2.5.7.jar`).
-
-A successful `1.12` build also runs `deployToDevbox`, which replaces `RoguelikeDungeons-Arcana-*.jar` in:
+The script then runs `:1.12:deployToDevbox` (skip with `-NoDeploy`), which replaces `RoguelikeDungeons-Arcana-*.jar` in:
 
 `%USERPROFILE%/curseforge/minecraft/Instances/Arcana Quest DEVBOX/mods`
 

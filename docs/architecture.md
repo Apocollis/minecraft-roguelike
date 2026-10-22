@@ -10,12 +10,12 @@ This document is the system map. Operational details (mixin crashes, Tweaks clea
 
 The mod places **seeded, themed dungeon complexes** in the overworld: a surface tower, stacked underground levels, rooms, corridors, loot, and spawners. Arcana-specific work keeps generation **tick-friendly**, maps finished dungeons into vanilla **structure queries**, and exposes theme/spawn knobs the pack actually uses.
 
-**Not in scope for this fork:** other Minecraft versions, a Cleanroom/Unimined rewrite, or lowering `/roguelike` below permission 4.
+**Not in scope for this fork:** other Minecraft versions, or lowering `/roguelike` below permission 4. Since 3.0.0 the jar requires Cleanroom; the stock Forge / Java 8 line is archived on branch `2.5.x`.
 
 ```mermaid
 flowchart LR
   subgraph pack [Arcana Quest DEVBOX]
-    Forge[Forge 14.23.5 + Cleanroom Relauncher]
+    Forge[Forge 14.23.5 + Cleanroom Relauncher, Cleanroom 0.6.13 on Java 25]
     RL[Roguelike Arcana jar]
     Tweaks[aqtweaks]
     IC[InControl]
@@ -28,7 +28,7 @@ flowchart LR
   end
 ```
 
-Runtime world: stock Forge loader plus relauncher (game JVM may be Java 25). **This jar is Java 8 bytecode.**
+Runtime world: the Forge 14.23.5 install plus the Cleanroom Relauncher, which runs Cleanroom 0.6.13-alpha on Java 25. **This jar is Java 21 bytecode (class major 65) and requires Cleanroom.**
 
 ---
 
@@ -42,7 +42,7 @@ flowchart TB
     M12 -->|implementation| Core
   end
   Jar[RoguelikeDungeons-Arcana-VERSION.jar]
-  M12 -->|fat-jar + reobf| Jar
+  M12 -->|fat-jar + remapJar| Jar
   World[Minecraft world tick / chunk populate]
   Jar --> World
 ```
@@ -241,7 +241,7 @@ Existing cfg **string lists are not merged** when Java defaults change. Devbox v
 
 **Pack coupling:** Rustic lanterns, Y −64, Tweaks mixins, InControl structure name `RoguelikeDungeon`. Tweaks still owns cave mixins and (until cleanup) dungeon mixins — [tweaks-handoff.md](tweaks-handoff.md).
 
-**Build:** JDK 8, ForgeGradle 6, jar `RoguelikeDungeons-Arcana-<version>.jar`, `:1.12:build` deploys to Devbox — [build-and-deploy.md](build-and-deploy.md).
+**Build:** JDK 25 toolchain, Java 21 bytecode, Unimined + Cleanroom, remapped jar `RoguelikeDungeons-Arcana-<version>.jar`, `scripts/build_gradle.ps1` builds and deploys to Devbox — [build-and-deploy.md](build-and-deploy.md).
 
 ---
 
@@ -255,7 +255,7 @@ Existing cfg **string lists are not merged** when Java defaults change. Devbox v
 | A4 | Register structure boxes on job complete | `generate()` RETURN never runs on the async path |
 | A5 | Separate village vs other structure distances | Villages have little underground loot; temples/mineshafts do |
 | A6 | Mixins: SRG + `remap = false`, no `World` mixin | No refmap; `World` already loaded in DEFAULT phase |
-| A7 | Stay Java 8 / ForgeGradle | Pack is hybrid Forge+relauncher; Tweaks Unimined does not buy dungeon features |
+| A7 | Unimined + Cleanroom 0.6.13, JDK 25 toolchain, Java 21 bytecode (3.0.0; was Java 8 / ForgeGradle) | Matches Chunk Steward and Tweaks, allows direct compile against Chunk Steward; stock Forge / Java 8 dropped and archived on `2.5.x` |
 | A8 | `/roguelike` stays perm 4 | Destructive commands share the parent; locate for players is vanilla `/locate` |
 | A9 | Do not collapse greymerk/fnar packages until Tweaks dungeon mixins are gone | FQCN mixins and reflection |
 

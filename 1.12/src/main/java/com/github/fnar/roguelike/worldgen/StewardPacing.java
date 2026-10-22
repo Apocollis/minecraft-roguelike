@@ -1,8 +1,6 @@
 package com.github.fnar.roguelike.worldgen;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
+import com.apocollis.chunksteward.api.ChunkStewardAPI;
 
 import net.minecraftforge.fml.common.Loader;
 
@@ -12,46 +10,29 @@ import org.apache.logging.log4j.Logger;
 import greymerk.roguelike.dungeon.Dungeon;
 
 /**
- * Chunk Steward's read-only pacing API, reached by reflection so this mod still compiles on Java 8
- * when the Steward jar is absent or built for a newer Java. The method names stay the ones a later
- * direct-call version can keep.
+ * Chunk Steward's read-only pacing API (API_VERSION 2), called directly. Chunk Steward is still
+ * optional: every call goes through {@link Api}, which is only loaded once the mod is known to be
+ * present, so this class never touches {@code ChunkStewardAPI} without it.
  *
- * <p>Absent, or disabled after the API itself cannot be resolved: load factor 1, a large remaining
- * time, and chunk generation false, so the scheduler applies no cap and no heavy restriction.
- * A missing {@code getHeadroomMs} keeps pacing on and falls back to the in-tick remainder.
+ * <p>Absent, or disabled after a call fails (for example a Steward jar without these methods):
+ * load factor 1, a large remaining time, and chunk generation false, so the scheduler applies no
+ * cap and no heavy restriction.
  */
 public final class StewardPacing {
 
   private static final Logger logger = LogManager.getLogger(Dungeon.MOD_ID);
-  private static final String API_CLASS = "com.apocollis.chunksteward.api.ChunkStewardAPI";
   private static final double DEFAULT_TARGET_MS = 40.0;
-  /** v1 has no load factor. Behind pauses under the default minimum (0.5) without using the zero cap. */
-  private static final double V1_BEHIND_LOAD_FACTOR = 0.25;
   /** Large enough that a cap to it does not shrink a build budget. */
   private static final double ABSENT_REMAINING_MS = 1.0e9;
 
-  private static final int UNTRIED = 0;
-  private static final int READY = 1;
-  private static final int DISABLED = 2;
-
-  private static int state = UNTRIED;
-  private static MethodHandle remainingHandle;
-  private static MethodHandle behindHandle;
-  private static MethodHandle generatingHandle;
-  private static MethodHandle loadFactorHandle;
-  private static MethodHandle headroomHandle;
-  private static MethodHandle measuredTpsHandle;
+  private static boolean disabled;
 
   private StewardPacing() {
   }
 
-  /** True when Chunk Steward is loaded and its pacing API resolved. */
+  /** True when Chunk Steward is loaded and its pacing API has not failed. */
   public static boolean available() {
-    if (!Loader.isModLoaded("chunksteward")) {
-      return false;
-    }
-    ensure();
-    return state == READY;
+    return !disabled && Loader.isModLoaded("chunksteward");
   }
 
   public static double remainingMs() {
@@ -59,9 +40,9 @@ public final class StewardPacing {
       return ABSENT_REMAINING_MS;
     }
     try {
-      return (double) remainingHandle.invoke(DEFAULT_TARGET_MS);
-    } catch (Throwable t) {
-      disable(t.toString());
+      return Api.remainingMs(DEFAULT_TARGET_MS);
+    } catch (RuntimeException | LinkageError e) {
+      disable(e);
       return ABSENT_REMAINING_MS;
     }
   }
@@ -74,17 +55,14 @@ public final class StewardPacing {
     if (!available()) {
       return 1.0;
     }
-    if (loadFactorHandle == null) {
-      return flag(behindHandle) ? V1_BEHIND_LOAD_FACTOR : 1.0;
-    }
     try {
-      double value = (double) loadFactorHandle.invoke();
+      double value = Api.loadFactor();
       if (!Double.isFinite(value) || value > 1.0) {
         return 1.0;
       }
       return value < 0.0 ? 0.0 : value;
-    } catch (Throwable t) {
-      disable(t.toString());
+    } catch (RuntimeException | LinkageError e) {
+      disable(e);
       return 1.0;
     }
   }
@@ -96,146 +74,84 @@ public final class StewardPacing {
 
   /**
    * Spare milliseconds per tick on average. Absent pacing returns a value too large to cap a
-   * budget. A missing or unusable reading falls back to {@link #remainingMs()}.
+   * budget. An unusable reading falls back to {@link #remainingMs()}.
    */
   public static double headroomMs() {
     if (!available()) {
       return ABSENT_REMAINING_MS;
     }
-    if (headroomHandle == null) {
-      return remainingMs();
-    }
     try {
-      double headroom = (double) headroomHandle.invoke();
+      double headroom = Api.headroomMs();
       if (Double.isFinite(headroom) && headroom >= 0.0) {
         return headroom;
       }
       return remainingMs();
-    } catch (Throwable t) {
-      disable(t.toString());
+    } catch (RuntimeException | LinkageError e) {
+      disable(e);
       return ABSENT_REMAINING_MS;
     }
   }
 
   public static boolean generatingChunks() {
-    return flag(generatingHandle);
+    if (!available()) {
+      return false;
+    }
+    try {
+      return Api.generatingChunks();
+    } catch (RuntimeException | LinkageError e) {
+      disable(e);
+      return false;
+    }
   }
 
-  /** True when {@link #measuredTps()} can be read. A miss leaves the rest of pacing enabled. */
+  /** True when {@link #measuredTps()} can be read. */
   public static boolean hasMeasuredTps() {
-    return available() && measuredTpsHandle != null;
+    return available();
   }
 
-  /**
-   * Measured TPS from Chunk Steward, or -1 when the method is missing or the call fails.
-   * Failure drops only this reading. Load factor, headroom and chunk generation stay in use.
-   */
+  /** Measured TPS from Chunk Steward, or -1 when pacing is absent or the reading is unusable. */
   public static double measuredTps() {
-    if (!hasMeasuredTps()) {
+    if (!available()) {
       return -1.0;
     }
     try {
-      double value = (double) measuredTpsHandle.invoke();
+      double value = Api.measuredTps();
       return Double.isFinite(value) ? value : -1.0;
-    } catch (Throwable t) {
-      measuredTpsHandle = null;
-      logger.warn("Could not read ChunkStewardAPI.getMeasuredTps ({}); full-TPS pacing uses load factor.", t.toString());
+    } catch (RuntimeException | LinkageError e) {
+      disable(e);
       return -1.0;
     }
   }
 
-  private static boolean flag(MethodHandle handle) {
-    if (!available() || handle == null) {
-      return false;
-    }
-    try {
-      return (boolean) handle.invoke();
-    } catch (Throwable t) {
-      disable(t.toString());
-      return false;
-    }
-  }
-
-  private static void ensure() {
-    if (state != UNTRIED) {
+  private static void disable(Throwable reason) {
+    if (disabled) {
       return;
     }
-    try {
-      Class<?> api = loadClass(API_CLASS);
-      int version = api.getField("API_VERSION").getInt(null);
-      if (version < 1) {
-        disable("API_VERSION " + version);
-        return;
-      }
-      MethodHandles.Lookup lookup = MethodHandles.publicLookup();
-      remainingHandle = lookup.findStatic(api, "getRemainingTickBudgetMs",
-          MethodType.methodType(double.class, double.class));
-      behindHandle = lookup.findStatic(api, "isServerBehind", MethodType.methodType(boolean.class));
-      generatingHandle = lookup.findStatic(api, "isGeneratingChunks", MethodType.methodType(boolean.class));
-      if (version >= 2) {
-        bindOptional(lookup, api, "getLoadFactor", true);
-        bindOptional(lookup, api, "getHeadroomMs", false);
-        bindMeasuredTps(lookup, api);
-      }
-      state = READY;
-    } catch (Throwable t) {
-      disable(t.toString());
-    }
+    disabled = true;
+    logger.warn("Chunk Steward pacing disabled ({}). Builds use the normal tick budget.", reason.toString());
   }
 
-  /** A miss keeps pacing on and leaves the full-TPS band to {@code getLoadFactor}. */
-  private static void bindMeasuredTps(MethodHandles.Lookup lookup, Class<?> api) {
-    try {
-      measuredTpsHandle = lookup.findStatic(api, "getMeasuredTps", MethodType.methodType(double.class));
-    } catch (Throwable t) {
-      measuredTpsHandle = null;
-      logger.warn("Could not resolve ChunkStewardAPI.getMeasuredTps ({}); full-TPS pacing uses load factor.", t.toString());
-    }
-  }
+  /** The only class that references {@code ChunkStewardAPI}; loaded on first use, after the mod check. */
+  private static final class Api {
 
-  /** A miss here keeps pacing on. Load factor falls back to {@code isServerBehind}; headroom to the in-tick remainder. */
-  private static void bindOptional(MethodHandles.Lookup lookup, Class<?> api, String method, boolean loadFactor) {
-    try {
-      MethodHandle handle = lookup.findStatic(api, method, MethodType.methodType(double.class));
-      if (loadFactor) {
-        loadFactorHandle = handle;
-      } else {
-        headroomHandle = handle;
-      }
-    } catch (Throwable t) {
-      if (loadFactor) {
-        loadFactorHandle = null;
-      } else {
-        headroomHandle = null;
-      }
-      logger.warn("Could not resolve ChunkStewardAPI.{} ({}); pacing stays on with a fallback.", method, t.toString());
+    static double remainingMs(double targetMs) {
+      return ChunkStewardAPI.getRemainingTickBudgetMs(targetMs);
     }
-  }
 
-  private static Class<?> loadClass(String name) throws ClassNotFoundException {
-    ClassLoader primary = StewardPacing.class.getClassLoader();
-    try {
-      return Class.forName(name, true, primary);
-    } catch (ClassNotFoundException primaryMiss) {
-      ClassLoader mods = Loader.instance().getModClassLoader();
-      if (mods == null || mods == primary) {
-        throw primaryMiss;
-      }
-      return Class.forName(name, true, mods);
+    static double loadFactor() {
+      return ChunkStewardAPI.getLoadFactor();
     }
-  }
 
-  private static void disable(String reason) {
-    if (state == DISABLED) {
-      return;
+    static double headroomMs() {
+      return ChunkStewardAPI.getHeadroomMs();
     }
-    state = DISABLED;
-    remainingHandle = null;
-    behindHandle = null;
-    generatingHandle = null;
-    loadFactorHandle = null;
-    headroomHandle = null;
-    measuredTpsHandle = null;
-    logger.warn("Chunk Steward pacing disabled ({}). Builds use the normal tick budget.", reason);
+
+    static boolean generatingChunks() {
+      return ChunkStewardAPI.isGeneratingChunks();
+    }
+
+    static double measuredTps() {
+      return ChunkStewardAPI.getMeasuredTps();
+    }
   }
 }
