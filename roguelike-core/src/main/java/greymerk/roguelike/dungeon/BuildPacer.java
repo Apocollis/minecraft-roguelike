@@ -4,6 +4,13 @@ package greymerk.roguelike.dungeon;
  * Decides, once per server tick, how much dungeon-build work that tick can take, from how the
  * server loop is keeping up. The caller reports the start and end of every server tick.
  *
+ * <p>This is per-tick timing, not a second lag detector. Every lag judgement (load factor, TPS,
+ * headroom, player chunk generation, overspend or backoff) comes from Chunk Steward in the
+ * scheduler. Steward only reports averages and the time used inside the current tick, so it cannot
+ * say whether the server slept before this tick; that, the previous tick's length and the
+ * heavy-step wait are measured here. They only take effect in Steward backoff mode: an overspend
+ * tick replaces this budget and ignores {@link TickBudget#isBehind()}.
+ *
  * <p>{@code MinecraftServer} runs ticks back to back with no sleep while it is behind, and sleeps
  * at least 1 ms once it has caught up. So the idle time between the previous tick's end and this
  * tick's start is the direct "behind" signal. A per-world gap would include every other dimension's

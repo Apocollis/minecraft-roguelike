@@ -21,9 +21,10 @@ Code defaults live in `RogueConfig`. **Devbox often overrides them.** Missing ke
 
 ## Build pacing
 
+Chunk Steward is required since 3.0.0, so the `steward*` keys always apply. `prepareHeavyStepMaxIntervalTicks` was removed: it only applied without Chunk Steward. An old cfg line for it is ignored.
+
 | Key | Code default | Meaning |
 |-----|--------------|---------|
-| `prepareHeavyStepMaxIntervalTicks` | 100 | Longest wait (ticks) between heavy chunk steps while a dungeon prepares its footprint, **when Chunk Steward is not loaded**. Past it one runs even while the server is catching up. Minimum 1. |
 | `stewardMinLoadFactor` | 0.5 | With Chunk Steward: pause for server load only when its load factor is below this. 1.0 is 20 TPS, 0.0 is at or below 15 TPS. |
 | `stewardMinSliceMs` | 8 | With Chunk Steward, in the full-TPS band (measured TPS ≥ 19.5, or load factor ≥ 0.9): floor of the per-tick slice, in ms. |
 | `stewardMaxSliceMs` | 40 | Ceiling of that slice. The slice is `clamp(headroom, min, max)`. An existing cfg value is kept; this default applies only when the key is absent. |

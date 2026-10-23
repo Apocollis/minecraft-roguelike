@@ -1,5 +1,7 @@
 package com.github.fnar.roguelike;
 
+import com.apocollis.chunksteward.config.ChunkStewardConfig;
+
 import com.github.fnar.roguelike.command.RoguelikeCommand1_12;
 import com.github.fnar.roguelike.worldgen.DungeonGenerator1_12;
 import com.github.fnar.roguelike.worldgen.DungeonGenerationScheduler;
@@ -14,7 +16,6 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.Mod.Instance;
 import net.minecraftforge.fml.common.FMLCommonHandler;
-import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartedEvent;
@@ -29,7 +30,7 @@ import greymerk.roguelike.ItemTooltip;
 import greymerk.roguelike.command.CommandWhereAmI;
 import greymerk.roguelike.dungeon.Dungeon;
 
-@Mod(modid = "roguelike", name = "Roguelike Dungeons: Depths -- Arcana Edition", version = Roguelike.version, acceptableRemoteVersions = "*", dependencies = "after:chunksteward")
+@Mod(modid = "roguelike", name = "Roguelike Dungeons: Depths -- Arcana Edition", version = Roguelike.version, acceptableRemoteVersions = "*", dependencies = "required-after:chunksteward")
 public class Roguelike {
 
   public static final Logger LOGGER = LogManager.getLogger(Dungeon.MOD_ID);
@@ -65,7 +66,7 @@ public class Roguelike {
 
   @EventHandler
   public void serverStarted(FMLServerStartedEvent event) {
-    checkLazyChunksExemption();
+    checkStewardTicketExemption();
     MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
     if (server == null) {
       return;
@@ -77,34 +78,19 @@ public class Roguelike {
   }
 
   /**
-   * Chunk Steward (and the older lazychunks jar) defers populates past its own tick budget unless
-   * the chunk is held by a ticket from a mod in {@code populate.ticketExemptMods}. Without
-   * "roguelike" there, dungeon footprint populates can be deferred until after the build. Each
-   * loaded mod is checked on its own. Read by reflection: no compile dependency.
+   * Chunk Steward defers populates past its own tick budget unless the chunk is held by a ticket
+   * from a mod in {@code populate.ticketExemptMods}. Without "roguelike" there, dungeon footprint
+   * populates can be deferred until after the build.
    */
-  private static void checkLazyChunksExemption() {
-    warnIfTicketExemptMissing("chunksteward", "com.apocollis.chunksteward.config.ChunkStewardConfig");
-    warnIfTicketExemptMissing("lazychunks", "com.apocollis.lazychunks.config.LazyChunksConfig");
-  }
-
-  private static void warnIfTicketExemptMissing(String modid, String configClass) {
-    if (!Loader.isModLoaded(modid)) {
-      return;
-    }
-    try {
-      Class<?> config = Class.forName(configClass);
-      Object populate = config.getField("populate").get(null);
-      Object mods = populate.getClass().getField("ticketExemptMods").get(populate);
-      if (mods instanceof String[]) {
-        for (String mod : (String[]) mods) {
-          if (mod != null && Dungeon.MOD_ID.equals(mod.trim())) {
-            return;
-          }
+  private static void checkStewardTicketExemption() {
+    String[] mods = ChunkStewardConfig.populate == null ? null : ChunkStewardConfig.populate.ticketExemptMods;
+    if (mods != null) {
+      for (String mod : mods) {
+        if (mod != null && Dungeon.MOD_ID.equals(mod.trim())) {
+          return;
         }
       }
-      LOGGER.warn("{} is installed but '{}' is not in its populate.ticketExemptMods; dungeon footprint populates may be deferred until after the build.", modid, Dungeon.MOD_ID);
-    } catch (ReflectiveOperationException | RuntimeException e) {
-      LOGGER.warn("Could not read {}'s populate.ticketExemptMods ({}); dungeon footprint populates may be deferred.", modid, e.toString());
     }
+    LOGGER.warn("Chunk Steward's populate.ticketExemptMods does not include '{}'; dungeon footprint populates may be deferred until after the build.", Dungeon.MOD_ID);
   }
 }

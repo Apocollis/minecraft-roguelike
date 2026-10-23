@@ -26,7 +26,7 @@ From the repo root (needs JDK 25 at `C:\Program Files\Zulu\zulu-25`, or set `ROG
 .\scripts\build_gradle.ps1
 ```
 
-The remapped release jar is written to `1.12/build/libs/` (e.g. `RoguelikeDungeons-Arcana-3.0.0.jar`). The `-dev.jar` next to it is MCP-mapped and only for dev runs. This version requires Cleanroom; the Java 8 / Forge line is on branch `2.5.x`.
+The remapped release jar is written to `1.12/build/libs/` (e.g. `RoguelikeDungeons-Arcana-3.0.0.jar`). The `-dev.jar` next to it is MCP-mapped and only for dev runs. This version requires Cleanroom and Chunk Steward (`required-after:chunksteward`; Roguelike will not start without it); the Java 8 / Forge line is on branch `2.5.x`.
 
 The script then runs `:1.12:deployToDevbox` (skip with `-NoDeploy`), which replaces `RoguelikeDungeons-Arcana-*.jar` in:
 

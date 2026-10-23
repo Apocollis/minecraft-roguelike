@@ -61,13 +61,7 @@ public class RogueConfig {
   public static final RogueConfig GRID_MIN_CHUNK_DISTANCE = new RogueConfig("gridMinChunkDistance").withValue(32);
   public static final RogueConfig GRID_MAX_CHUNK_DISTANCE = new RogueConfig("gridMaxChunkDistance").withValue(48);
   public static final RogueConfig GRID_SEED_OFFSET = new RogueConfig("gridSeedOffset").withValue(1432289);
-  /**
-   * Longest wait, in ticks, between heavy chunk steps (a chunk load or populate) while a dungeon
-   * prepares its footprint. Past it one runs even while the server is catching up: a lag spike
-   * traded for progress on busy servers. Lower = faster prepare, more spikes.
-   */
-  public static final RogueConfig PREPARE_HEAVY_STEP_MAX_INTERVAL_TICKS = new RogueConfig("prepareHeavyStepMaxIntervalTicks").withValue(100);
-  /** Load factor below which Chunk Steward pacing pauses. 1.0 is 20 TPS, 0.0 is at or below 15. Used only when Chunk Steward is loaded. */
+  /** Load factor below which Chunk Steward pacing pauses. 1.0 is 20 TPS, 0.0 is at or below 15. */
   public static final RogueConfig STEWARD_MIN_LOAD_FACTOR = new RogueConfig("stewardMinLoadFactor").withValue(0.5);
   /** Floor of the per-tick slice, in ms, when Chunk Steward is in the full-TPS band (load factor >= 0.9 or measured TPS >= 19.5). */
   public static final RogueConfig STEWARD_MIN_SLICE_MS = new RogueConfig("stewardMinSliceMs").withValue(8.0);
@@ -208,9 +202,6 @@ public class RogueConfig {
     }
     if (!configurationMap.containsKey(GRID_SEED_OFFSET.name)) {
       GRID_SEED_OFFSET.setInt(GRID_SEED_OFFSET.intValue);
-    }
-    if (!configurationMap.containsKey(PREPARE_HEAVY_STEP_MAX_INTERVAL_TICKS.name)) {
-      PREPARE_HEAVY_STEP_MAX_INTERVAL_TICKS.setInt(PREPARE_HEAVY_STEP_MAX_INTERVAL_TICKS.intValue);
     }
     if (!configurationMap.containsKey(STEWARD_MIN_LOAD_FACTOR.name)) {
       STEWARD_MIN_LOAD_FACTOR.setDouble(STEWARD_MIN_LOAD_FACTOR.doubleValue);
